@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+﻿import 'package:flutter/material.dart';
+
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/app_data.dart';
@@ -64,7 +64,7 @@ class _PesananViewState extends State<PesananView> {
           const SizedBox(height: 8),
           Text(
             'Kelola dan pantau semua transaksi laundry Anda di sini.',
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 32),
           
@@ -72,7 +72,7 @@ class _PesananViewState extends State<PesananView> {
             onChanged: (v) => setState(() => _searchQuery = v),
             decoration: InputDecoration(
               hintText: 'Cari Nama Pelanggan atau Kode Pesanan...',
-              hintStyle: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 13),
+              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
               prefixIcon: const Icon(Icons.search, size: 20),
               filled: true,
               fillColor: Colors.white,
@@ -90,7 +90,7 @@ class _PesananViewState extends State<PesananView> {
                   children: [
                     Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade300),
                     const SizedBox(height: 16),
-                    Text('Tidak ada pesanan ditemukan.', style: GoogleFonts.inter(color: Colors.grey.shade500)),
+                    Text('Tidak ada pesanan ditemukan.', style: TextStyle(color: Colors.grey.shade500)),
                   ],
                 ),
               ),
@@ -122,11 +122,11 @@ class _PesananViewState extends State<PesananView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(o.id, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF1E88E5))),
+                            Text(o.id, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF1E88E5))),
                             const SizedBox(height: 4),
-                            Text(o.customer, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C1E))),
+                            Text(o.customer, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C1E))),
                             const SizedBox(height: 4),
-                            Text('${o.service} • ${o.weight} Kg', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
+                            Text('${o.service} â€¢ ${o.weight} Kg', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                           ],
                         ),
                       ),
@@ -145,7 +145,7 @@ class _PesananViewState extends State<PesananView> {
                               }
                             },
                             itemBuilder: (context) => ['Belum Bayar', 'Proses', 'Cuci', 'Keringkan', 'Setrika', 'Siap Ambil', 'Selesai']
-                                .map((s) => PopupMenuItem(value: s, child: Text(s, style: GoogleFonts.inter(fontSize: 12))))
+                                .map((s) => PopupMenuItem(value: s, child: Text(s, style: TextStyle(fontSize: 12))))
                                 .toList(),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -153,7 +153,7 @@ class _PesananViewState extends State<PesananView> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(o.status, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: _statusColor(o.status))),
+                                  Text(o.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _statusColor(o.status))),
                                   const SizedBox(width: 4),
                                   Icon(Icons.edit_outlined, size: 12, color: _statusColor(o.status)),
                                 ],
@@ -161,7 +161,7 @@ class _PesananViewState extends State<PesananView> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(_formatLongCurrency(o.price), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C1E))),
+                          Text(_formatLongCurrency(o.price), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C1E))),
                         ],
                       ),
                     ],
@@ -174,4 +174,6 @@ class _PesananViewState extends State<PesananView> {
     );
   }
 }
+
+
 

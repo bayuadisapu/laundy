@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+﻿import 'package:flutter/material.dart';
+
 import 'sidebar.dart';
 
 class MainLayout extends StatelessWidget {
@@ -56,3 +56,4 @@ class MainLayout extends StatelessWidget {
     );
   }
 }
+

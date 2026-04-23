@@ -1,47 +1,89 @@
--- 1. Tabel Users (Profil & Hak Akses)
--- Hubungkan ke auth.users Supabase
-CREATE TABLE public.users (
-  id UUID REFERENCES auth.users NOT NULL PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  name TEXT,
-  username TEXT UNIQUE,
-  img_url TEXT,
-  role TEXT CHECK (role IN ('admin', 'staff')) DEFAULT 'staff',
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- ============================================================
+-- SETUP DATABASE LAUNDRY KU - LENGKAP
+-- Jalankan di Supabase SQL Editor
+-- ============================================================
+
+-- 1. Drop dan buat ulang tabel orders
+drop table if exists public.orders;
+
+-- 2. Update tabel users - tambah kolom phone
+alter table public.users add column if not exists phone text;
+
+-- 3. Buat tabel price_config
+create table if not exists public.price_config (
+  service text not null primary key,
+  price_per_unit integer not null,
+  unit text not null default 'kg',
+  default_days integer not null default 2
 );
 
--- 2. Tabel Orders (Data Cucian)
-CREATE TABLE public.orders (
-  id TEXT PRIMARY KEY, -- Menggunakan ID manual (misal: LF-123)
-  customer TEXT NOT NULL,
-  service TEXT NOT NULL,
-  weight DECIMAL NOT NULL,
-  price INTEGER NOT NULL,
-  status TEXT NOT NULL,
-  pic TEXT, -- Nama staff yang menangani
-  date TEXT NOT NULL, -- Format YYYY-MM-DD
-  created_at TIMESTAMPTZ DEFAULT NOW()
+alter table public.price_config enable row level security;
+drop policy if exists "Allow all price_config" on public.price_config;
+create policy "Allow all price_config" on public.price_config using (true) with check (true);
+
+-- 4. Insert harga default
+insert into public.price_config (service, price_per_unit, unit, default_days) values
+  ('Biasa',   7000,  'kg',  3),
+  ('Express', 15000, 'kg',  1),
+  ('Lipat',   3000,  'kg',  2),
+  ('Setrika', 3000,  'kg',  2),
+  ('Satuan',  5000,  'pcs', 2)
+on conflict (service) do update set
+  price_per_unit = excluded.price_per_unit,
+  unit = excluded.unit,
+  default_days = excluded.default_days;
+
+-- 5. Buat tabel orders baru (schema lengkap)
+create table public.orders (
+  id text not null primary key,
+  customer text not null,
+  phone text,
+  service text not null,
+  weight double precision default 0,
+  price_per_unit integer default 0,
+  price integer not null default 0,
+  status text not null default 'Proses',
+  pic_id uuid references public.users(id),
+  pic_name text,
+  notes text,
+  estimated_date text,
+  order_time timestamp with time zone default timezone('utc', now()),
+  completed_time timestamp with time zone,
+  picked_up_time timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc', now())
 );
 
--- 3. Aktifkan Row Level Security (RLS)
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+alter table public.orders enable row level security;
+drop policy if exists "Allow all orders" on public.orders;
+create policy "Allow all orders" on public.orders using (true) with check (true);
 
--- 4. Policies (Agar semua user authenticated bisa baca/tulis sementara untuk dev)
-CREATE POLICY "Allow all for authenticated users" ON public.users FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow all for authenticated users" ON public.orders FOR ALL TO authenticated USING (true);
+-- 6. Update RLS users agar anonymous juga bisa (untuk dev)
+drop policy if exists "Allow all" on public.users;
+drop policy if exists "Allow all for authenticated users" on public.users;
+create policy "Allow all" on public.users using (true) with check (true);
 
--- 5. Trigger Otomatis Pembuatan Profil saat Auth Register
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.users (id, email, name, role)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'name', 'staff');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 7. Trigger handle_new_user (update agar tidak error jika kolom tidak ada)
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.users (id, email, name, username, role)
+  values (
+    new.id, new.email,
+    coalesce(new.raw_user_meta_data->>'name', new.email),
+    new.email, 'staff'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- 8. Set admin (ganti email sesuai akun admin Anda)
+insert into public.users (id, email, name, username, role)
+select id, email, 'Administrator', 'admin', 'admin'
+from auth.users where email = 'admin@gmail.com'
+on conflict (id) do update set role = 'admin';

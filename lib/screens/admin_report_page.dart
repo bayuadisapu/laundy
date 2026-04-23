@@ -1,6 +1,6 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:excel/excel.dart' as xl;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
@@ -30,13 +30,13 @@ class _AdminReportPageState extends State<AdminReportPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Logout', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-        content: Text('Apakah Anda yakin ingin keluar?', style: GoogleFonts.inter()),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Apakah Anda yakin ingin keluar?', style: TextStyle()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Batal', style: GoogleFonts.inter(color: Colors.grey)),
+            child: Text('Batal', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -51,7 +51,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Logout', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            child: Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -63,26 +63,19 @@ class _AdminReportPageState extends State<AdminReportPage> {
   // Filter orders by selected range
   List<OrderData> get _filteredTransactions {
     final now = DateTime.now();
-    final today = DateFormat('yyyy-MM-dd').format(now);
-
     return _state.orders.where((o) {
       if (_selectedRange == 'Semua') return true;
-
-      try {
-        final orderDate = DateTime.parse(o.date);
-        switch (_selectedRange) {
-          case 'Hari Ini':
-            return o.date == today;
-          case 'Minggu Ini':
-            final weekStart = now.subtract(Duration(days: now.weekday - 1));
-            return orderDate.isAfter(weekStart.subtract(const Duration(days: 1)));
-          case 'Bulan Ini':
-            return orderDate.month == now.month && orderDate.year == now.year;
-          default:
-            return true;
-        }
-      } catch (_) {
-        return true;
+      final orderDate = o.orderTime;
+      switch (_selectedRange) {
+        case 'Hari Ini':
+          return orderDate.year == now.year && orderDate.month == now.month && orderDate.day == now.day;
+        case 'Minggu Ini':
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          return !orderDate.isBefore(DateTime(weekStart.year, weekStart.month, weekStart.day));
+        case 'Bulan Ini':
+          return orderDate.month == now.month && orderDate.year == now.year;
+        default:
+          return true;
       }
     }).toList();
   }
@@ -134,7 +127,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: r)).value = xl.DoubleCellValue(t.weight);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: r)).value = xl.TextCellValue(_fmt(t.price.toDouble()));
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: r)).value = xl.TextCellValue(t.status);
-        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: r)).value = xl.TextCellValue(t.pic);
+        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: r)).value = xl.TextCellValue(t.picName);
       }
 
       final bytes = excel.save();
@@ -145,7 +138,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
       await OpenFile.open(path);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Excel berhasil diekspor!', style: GoogleFonts.inter()), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), margin: const EdgeInsets.all(16)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Excel berhasil diekspor!', style: TextStyle()), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), margin: const EdgeInsets.all(16)));
       }
     } catch (e) {
       if (mounted) {
@@ -215,8 +208,8 @@ class _AdminReportPageState extends State<AdminReportPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Laporan Keuangan', style: GoogleFonts.inter(fontSize: isPhone ? 22 : 26, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
-                    Text('Analisis laba rugi dan rincian transaksi.', style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade500)),
+                    Text('Laporan Keuangan', style: TextStyle(fontSize: isPhone ? 22 : 26, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
+                    Text('Analisis laba rugi dan rincian transaksi.', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
                     const SizedBox(height: 24),
                     _buildPeriodFilter(),
                     const SizedBox(height: 24),
@@ -237,8 +230,8 @@ class _AdminReportPageState extends State<AdminReportPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Rincian Transaksi', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
-                        Text('${transactions.length} data', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF0D47A1))),
+                        Text('Rincian Transaksi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
+                        Text('${transactions.length} data', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF0D47A1))),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -250,7 +243,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                             children: [
                               Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade300),
                               const SizedBox(height: 12),
-                              Text('Tidak ada transaksi pada periode ini', style: GoogleFonts.inter(color: Colors.grey.shade400)),
+                              Text('Tidak ada transaksi pada periode ini', style: TextStyle(color: Colors.grey.shade400)),
                             ],
                           ),
                         ),
@@ -279,8 +272,8 @@ class _AdminReportPageState extends State<AdminReportPage> {
             const CircleAvatar(radius: 22, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=admin')),
             const SizedBox(width: 12),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('LaundryKu', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF0D47A1))),
-              Text('ADMIN PORTAL', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 1.2)),
+              Text('LaundryKu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF0D47A1))),
+              Text('ADMIN PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 1.2)),
             ]),
           ]),
           Container(
@@ -323,7 +316,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                   borderRadius: BorderRadius.circular(20),
                   border: sel ? null : Border.all(color: Colors.grey.shade200),
                 ),
-                child: Text(p, style: GoogleFonts.inter(color: sel ? Colors.white : Colors.grey.shade600, fontWeight: sel ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
+                child: Text(p, style: TextStyle(color: sel ? Colors.white : Colors.grey.shade600, fontWeight: sel ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
               ),
             ),
           );
@@ -346,7 +339,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)]),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 8))],
           ),
           child: Row(
@@ -354,11 +347,11 @@ class _AdminReportPageState extends State<AdminReportPage> {
             children: [
               Flexible(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('LABA BERSIH', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 1.1)),
+                  Text('LABA BERSIH', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 1.1)),
                   const SizedBox(height: 4),
                   FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(_fmt(_netProfit), style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                    child: Text(_fmt(_netProfit), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
                 ]),
               ),
@@ -366,7 +359,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(12)),
-                child: Text('${_profitMargin.toStringAsFixed(1)}%', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text('${_profitMargin.toStringAsFixed(1)}%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ],
           ),
@@ -378,17 +371,17 @@ class _AdminReportPageState extends State<AdminReportPage> {
   Widget _pnlCard(String label, String value, IconData icon, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: fg, size: 20)),
         const SizedBox(height: 14),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(value, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1A1C2E))),
+          child: Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1A1C2E))),
         ),
         const SizedBox(height: 4),
-        Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade500)),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
       ]),
     );
   }
@@ -406,8 +399,8 @@ class _AdminReportPageState extends State<AdminReportPage> {
     if (serviceMap.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 15, offset: const Offset(0, 6))]),
-        child: Center(child: Text('Tidak ada data untuk ditampilkan', style: GoogleFonts.inter(color: Colors.grey.shade400))),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 15, offset: const Offset(0, 6))]),
+        child: Center(child: Text('Tidak ada data untuk ditampilkan', style: TextStyle(color: Colors.grey.shade400))),
       );
     }
 
@@ -423,11 +416,11 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 15, offset: const Offset(0, 6))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 15, offset: const Offset(0, 6))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Pendapatan per Layanan', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
+          Text('Pendapatan per Layanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
           const SizedBox(height: 8),
           Wrap(
             spacing: 16,
@@ -439,7 +432,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                 children: [
                   Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
                   const SizedBox(width: 6),
-                  Text(e.value.key, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey.shade600)),
+                  Text(e.value.key, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 ]
               );
             }).toList(),
@@ -454,7 +447,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     return BarTooltipItem(
                       '${services[groupIndex].key}\n${_fmt(rod.toY)}',
-                      GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                      TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
                     );
                   },
                 ),
@@ -464,9 +457,9 @@ class _AdminReportPageState extends State<AdminReportPage> {
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 50, getTitlesWidget: (v, _) => Text(_shortCurrency(v), style: GoogleFonts.inter(fontSize: 10, color: Colors.grey.shade400)))),
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 50, getTitlesWidget: (v, _) => Text(_shortCurrency(v), style: TextStyle(fontSize: 10, color: Colors.grey.shade400)))),
                 bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-                  if (v.toInt() < services.length) return Padding(padding: const EdgeInsets.only(top: 8), child: Text(services[v.toInt()].key, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500)));
+                  if (v.toInt() < services.length) return Padding(padding: const EdgeInsets.only(top: 8), child: Text(services[v.toInt()].key, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)));
                   return const SizedBox.shrink();
                 })),
               ),
@@ -503,7 +496,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
             child: ElevatedButton.icon(
               onPressed: _isExporting ? null : _exportExcel,
               icon: _isExporting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.table_chart_outlined, size: 20),
-              label: Text('Excel', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              label: Text('Excel', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
             ),
           ),
@@ -515,7 +508,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
             child: ElevatedButton.icon(
               onPressed: _exportPdf,
               icon: const Icon(Icons.picture_as_pdf_outlined, size: 20),
-              label: Text('PDF', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+              label: Text('PDF', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
             ),
           ),
@@ -563,15 +556,15 @@ class _TransactionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Row(children: [
-            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(10)), child: Text('#$index', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1)))),
+            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(10)), child: Text('#$index', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1)))),
             const SizedBox(width: 12),
-            Text(data.id, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1A1C2E))),
+            Text(data.id, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF1A1C2E))),
           ]),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _sBg, borderRadius: BorderRadius.circular(10)), child: Text(data.status.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _sTxt))),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _sBg, borderRadius: BorderRadius.circular(10)), child: Text(data.status.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: _sTxt))),
         ]),
         const SizedBox(height: 14),
         Row(children: [
@@ -584,7 +577,11 @@ class _TransactionCard extends StatelessWidget {
   }
 
   Widget _i(String l, String v) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text(l, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400)),
-    Text(v, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C2E)), overflow: TextOverflow.ellipsis),
+    Text(l, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400)),
+    Text(v, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C2E)), overflow: TextOverflow.ellipsis),
   ]);
 }
+
+
+
+

@@ -44,6 +44,10 @@ dependencies:
   printing: ^5.13.4
   flutter_animate: ^4.5.2
   supabase_flutter: ^2.6.0
+  barcode_widget: ^2.0.4
+  blue_thermal_printer: ^1.2.3
+  esc_pos_utils_plus: ^2.0.4
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

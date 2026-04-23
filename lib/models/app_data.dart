@@ -1,187 +1,186 @@
-import 'package:intl/intl.dart';
+﻿import 'package:intl/intl.dart';
 
-// ==================== ORDER MODEL ====================
+class PriceConfig {
+  final String service;
+  final int pricePerUnit;
+  final String unit;
+  final int defaultDays;
+
+  PriceConfig({required this.service, required this.pricePerUnit, required this.unit, required this.defaultDays});
+
+  factory PriceConfig.fromJson(Map<String, dynamic> json) => PriceConfig(
+    service: json['service'] ?? '',
+    pricePerUnit: json['price_per_unit'] ?? 0,
+    unit: json['unit'] ?? 'kg',
+    defaultDays: json['default_days'] ?? 2,
+  );
+
+  static List<PriceConfig> defaultPrices() => [
+    PriceConfig(service: 'Biasa',   pricePerUnit: 7000,  unit: 'kg',  defaultDays: 3),
+    PriceConfig(service: 'Express', pricePerUnit: 15000, unit: 'kg',  defaultDays: 1),
+    PriceConfig(service: 'Lipat',   pricePerUnit: 3000,  unit: 'kg',  defaultDays: 2),
+    PriceConfig(service: 'Setrika', pricePerUnit: 3000,  unit: 'kg',  defaultDays: 2),
+    PriceConfig(service: 'Satuan',  pricePerUnit: 5000,  unit: 'pcs', defaultDays: 2),
+  ];
+}
+
 class OrderData {
   String id;
   String customer;
+  String phone;
   String service;
   double weight;
+  int pricePerUnit;
   int price;
   String status;
-  String pic;
-  String date;
+  String? picId;
+  String picName;
+  String notes;
+  String estimatedDate;
+  DateTime orderTime;
+  DateTime? completedTime;
+  DateTime? pickedUpTime;
 
   OrderData({
     required this.id,
     required this.customer,
+    this.phone = '',
     required this.service,
     required this.weight,
+    this.pricePerUnit = 0,
     required this.price,
     required this.status,
-    required this.pic,
-    required this.date,
-  });
+    this.picId,
+    this.picName = '',
+    this.notes = '',
+    this.estimatedDate = '',
+    DateTime? orderTime,
+    this.completedTime,
+    this.pickedUpTime,
+  }) : orderTime = orderTime ?? DateTime.now();
 
   OrderData copyWith({
-    String? id,
-    String? customer,
-    String? service,
-    double? weight,
-    int? price,
-    String? status,
-    String? pic,
-    String? date,
-  }) {
-    return OrderData(
-      id: id ?? this.id,
-      customer: customer ?? this.customer,
-      service: service ?? this.service,
-      weight: weight ?? this.weight,
-      price: price ?? this.price,
-      status: status ?? this.status,
-      pic: pic ?? this.pic,
-      date: date ?? this.date,
-    );
-  }
+    String? id, String? customer, String? phone, String? service,
+    double? weight, int? pricePerUnit, int? price, String? status,
+    String? picId, String? picName, String? notes, String? estimatedDate,
+    DateTime? orderTime, DateTime? completedTime, DateTime? pickedUpTime,
+  }) => OrderData(
+    id: id ?? this.id, customer: customer ?? this.customer,
+    phone: phone ?? this.phone, service: service ?? this.service,
+    weight: weight ?? this.weight, pricePerUnit: pricePerUnit ?? this.pricePerUnit,
+    price: price ?? this.price, status: status ?? this.status,
+    picId: picId ?? this.picId, picName: picName ?? this.picName,
+    notes: notes ?? this.notes, estimatedDate: estimatedDate ?? this.estimatedDate,
+    orderTime: orderTime ?? this.orderTime,
+    completedTime: completedTime ?? this.completedTime,
+    pickedUpTime: pickedUpTime ?? this.pickedUpTime,
+  );
 
-  factory OrderData.fromJson(Map<String, dynamic> json) {
-    return OrderData(
-      id: json['id'] ?? '',
-      customer: json['customer'] ?? '',
-      service: json['service'] ?? '',
-      weight: (json['weight'] ?? 0).toDouble(),
-      price: json['price'] ?? 0,
-      status: json['status'] ?? '',
-      pic: json['pic'] ?? '',
-      date: json['date'] ?? '',
-    );
-  }
+  factory OrderData.fromJson(Map<String, dynamic> json) => OrderData(
+    id: json['id'] ?? '',
+    customer: json['customer'] ?? '',
+    phone: json['phone'] ?? '',
+    service: json['service'] ?? '',
+    weight: (json['weight'] ?? 0).toDouble(),
+    pricePerUnit: json['price_per_unit'] ?? 0,
+    price: json['price'] ?? 0,
+    status: json['status'] ?? 'Proses',
+    picId: json['pic_id'],
+    picName: json['pic_name'] ?? '',
+    notes: json['notes'] ?? '',
+    estimatedDate: json['estimated_date'] ?? '',
+    orderTime: json['order_time'] != null ? DateTime.parse(json['order_time']).toLocal() : DateTime.now(),
+    completedTime: json['completed_time'] != null ? DateTime.parse(json['completed_time']).toLocal() : null,
+    pickedUpTime: json['picked_up_time'] != null ? DateTime.parse(json['picked_up_time']).toLocal() : null,
+  );
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'customer': customer,
-      'service': service,
-      'weight': weight,
-      'price': price,
-      'status': status,
-      'pic': pic,
-      'date': date,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'id': id, 'customer': customer,
+    'phone': phone.isEmpty ? null : phone,
+    'service': service, 'weight': weight,
+    'price_per_unit': pricePerUnit, 'price': price, 'status': status,
+    'pic_id': picId, 'pic_name': picName,
+    'notes': notes.isEmpty ? null : notes,
+    'estimated_date': estimatedDate.isEmpty ? null : estimatedDate,
+    'order_time': orderTime.toUtc().toIso8601String(),
+    'completed_time': completedTime?.toUtc().toIso8601String(),
+    'picked_up_time': pickedUpTime?.toUtc().toIso8601String(),
+  };
+
+  String get formattedDate => DateFormat('dd/MM/yyyy HH:mm').format(orderTime);
+  String get formattedPrice => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(price);
 }
 
-// ==================== STAFF MODEL ====================
 class StaffData {
+  String id;
   String name;
   String email;
   String username;
   String imgUrl;
+  String phone;
   bool isActive;
 
   StaffData({
+    this.id = '',
     required this.name,
     required this.email,
     required this.username,
-    required this.imgUrl,
+    this.imgUrl = '',
+    this.phone = '',
     this.isActive = true,
   });
 
-  factory StaffData.fromJson(Map<String, dynamic> json) {
-    return StaffData(
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      username: json['username'] ?? '',
-      imgUrl: json['img_url'] ?? '',
-      isActive: json['is_active'] ?? true,
-    );
-  }
+  factory StaffData.fromJson(Map<String, dynamic> json) => StaffData(
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    email: json['email'] ?? '',
+    username: json['username'] ?? '',
+    imgUrl: json['img_url'] ?? 'https://i.pravatar.cc/150?u=default',
+    phone: json['phone'] ?? '',
+    isActive: json['is_active'] ?? true,
+  );
 
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'email': email,
-      'username': username,
-      'img_url': imgUrl,
-      'is_active': isActive,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+    'name': name, 'email': email, 'username': username,
+    'img_url': imgUrl, 'phone': phone, 'is_active': isActive,
+  };
 }
 
-// ==================== SHARED APP STATE ====================
 class AppState {
   final List<OrderData> orders;
   final List<StaffData> staffList;
+  List<PriceConfig> prices;
+  StaffData? currentUser;
 
-  AppState({required this.orders, required this.staffList});
+  AppState({required this.orders, required this.staffList, List<PriceConfig>? prices, this.currentUser})
+      : prices = prices ?? PriceConfig.defaultPrices();
 
-  // ---- Order Computed Getters ----
+  List<OrderData> get activeOrders => orders.where((o) => o.status == 'Proses').toList();
+  List<OrderData> get completedOrders => orders.where((o) => o.status == 'Selesai').toList();
+  List<OrderData> get pickedUpOrders => orders.where((o) => o.status == 'Sudah Diambil').toList();
 
-  double get todayIncome {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    return orders
-        .where((o) => o.date == today)
-        .fold(0.0, (sum, o) => sum + o.price);
-  }
-
-  int get activeOrders {
-    return orders.where((o) => o.status != 'Selesai').length;
-  }
-
-  int get backlog {
-    return orders.where((o) => o.status == 'Belum Bayar').length;
-  }
-
-  List<String> get _uniqueCustomers => orders.map((o) => o.customer).toSet().toList();
-
-  int get totalCustomers => _uniqueCustomers.length;
-
-  Map<String, int> get statusDistribution {
-    final map = <String, int>{};
-    for (var o in orders) {
-      if (o.status != 'Selesai') {
-        map[o.status] = (map[o.status] ?? 0) + 1;
-      }
-    }
-    return map;
-  }
-
-  double get totalIncome => orders.fold(0.0, (sum, o) => sum + o.price);
-
-  List<OrderData> get recentOrders {
-    final sorted = List<OrderData>.from(orders);
-    sorted.sort((a, b) => b.date.compareTo(a.date));
-    return sorted.take(5).toList();
-  }
-
-  // ---- Staff Computed Getters ----
+  int get totalProses => orders.where((o) => o.status == 'Proses').length;
+  int get totalSelesai => orders.where((o) => o.status == 'Selesai').length;
+  int get totalSudahDiambil => orders.where((o) => o.status == 'Sudah Diambil').length;
   int get totalStaff => staffList.length;
   int get activeStaff => staffList.where((s) => s.isActive).length;
 
-  // ---- Default Data ----
-  static AppState createDefault() {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final yesterday = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
-    final twoDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 2)));
-    final threeDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 3)));
+  List<OrderData> get recentOrders {
+    final sorted = List<OrderData>.from(orders);
+    sorted.sort((a, b) => b.orderTime.compareTo(a.orderTime));
+    return sorted.take(10).toList();
+  }
 
-    return AppState(
-      orders: [
-        OrderData(id: 'LF-98231-X', customer: 'Budi Santoso', service: 'Express', weight: 3.5, price: 52500, status: 'Proses', pic: 'Sarah Wilson', date: today),
-        OrderData(id: 'LF-77210-B', customer: 'Anita Wijaya', service: 'Regular', weight: 5.0, price: 50000, status: 'Selesai', pic: 'Marcus Chen', date: yesterday),
-        OrderData(id: 'LF-55421-Z', customer: 'Rian Pratama', service: 'Dry Clean', weight: 2.0, price: 60000, status: 'Selesai', pic: 'Sarah Wilson', date: yesterday),
-        OrderData(id: 'LF-44102-A', customer: 'Dewi Lestari', service: 'Express', weight: 4.0, price: 60000, status: 'Belum Bayar', pic: 'David Miller', date: twoDaysAgo),
-        OrderData(id: 'LF-33891-C', customer: 'Ahmad Fauzi', service: 'Regular', weight: 7.5, price: 75000, status: 'Proses', pic: 'Elena Rodriguez', date: twoDaysAgo),
-        OrderData(id: 'LF-22780-D', customer: 'Siti Rahayu', service: 'Premium', weight: 3.0, price: 90000, status: 'Selesai', pic: 'Marcus Chen', date: threeDaysAgo),
-        OrderData(id: 'LF-11234-E', customer: 'Hani Puspita', service: 'Kiloan', weight: 6.0, price: 42000, status: 'Cuci', pic: 'Sarah Wilson', date: today),
-        OrderData(id: 'LF-88432-F', customer: 'Rudi Hermawan', service: 'Express', weight: 2.5, price: 37500, status: 'Siap Ambil', pic: 'David Miller', date: today),
-      ],
-      staffList: [
-        StaffData(name: 'Sarah Wilson', email: 'sarah.w@laundryflow.com', username: 'sarah_w', imgUrl: 'https://i.pravatar.cc/150?u=s5', isActive: true),
-        StaffData(name: 'Marcus Chen', email: 'marcus.c@laundryflow.com', username: 'marcus_c', imgUrl: 'https://i.pravatar.cc/150?u=s6', isActive: true),
-        StaffData(name: 'David Miller', email: 'd.miller@laundryflow.com', username: 'd_miller', imgUrl: 'https://i.pravatar.cc/150?u=s7', isActive: true),
-        StaffData(name: 'Elena Rodriguez', email: 'elena.r@laundryflow.com', username: 'elena_r', imgUrl: 'https://i.pravatar.cc/150?u=s8', isActive: false),
-      ],
-    );
+  int incomeForPeriod(DateTime start, DateTime end) =>
+      orders.where((o) => o.status == 'Sudah Diambil' && o.pickedUpTime != null &&
+          !o.pickedUpTime!.isBefore(start) && o.pickedUpTime!.isBefore(end))
+          .fold(0, (s, o) => s + o.price);
+
+  int ordersForPeriod(DateTime start, DateTime end) =>
+      orders.where((o) => !o.orderTime.isBefore(start) && o.orderTime.isBefore(end)).length;
+
+  PriceConfig? getPriceConfig(String service) {
+    try { return prices.firstWhere((p) => p.service == service); }
+    catch (_) { return null; }
   }
 }

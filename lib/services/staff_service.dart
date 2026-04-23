@@ -30,9 +30,17 @@ class StaffService {
       if (response.user == null) {
         throw Exception('Gagal mendaftarkan akun staff.');
       }
-      
-      // Catatan: Trigger SQL 'on_auth_user_created' akan otomatis 
-      // memasukkan data ke tabel public.users
+
+      // Insert manual ke public.users (trigger mungkin belum berjalan)
+      await _supabase.from('users').upsert({
+        'id': response.user!.id,
+        'email': staff.email,
+        'name': staff.name,
+        'username': staff.username,
+        'img_url': staff.imgUrl,
+        'is_active': staff.isActive,
+        'role': 'staff',
+      });
     } catch (e) {
       throw Exception('Error registrasi: $e');
     }
@@ -41,8 +49,14 @@ class StaffService {
   Future<void> updateStaff(StaffData staff) async {
     await _supabase
         .from('users')
-        .update(staff.toMap())
-        .eq('username', staff.username);
+        .update({
+          'name': staff.name,
+          'email': staff.email,
+          'username': staff.username,
+          'img_url': staff.imgUrl,
+          'is_active': staff.isActive,
+        })
+        .eq('email', staff.email);
   }
 
   Future<void> deleteStaff(String username) async {

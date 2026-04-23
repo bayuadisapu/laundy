@@ -23,4 +23,10 @@ class SupabaseService {
         .maybeSingle();
     return response;
   }
+
+  static Future<Map<String, dynamic>?> getCurrentUserProfile() async {
+    final userId = currentUser?.id;
+    if (userId == null) return null;
+    return await getUserProfile(userId);
+  }
 }
