@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:excel/excel.dart' as xl;
@@ -24,6 +24,8 @@ class AdminReportPage extends StatefulWidget {
 
 class _AdminReportPageState extends State<AdminReportPage> {
   String _selectedRange = 'Semua';
+  int _selectedMonth = DateTime.now().month;
+  int _selectedYear = DateTime.now().year;
   bool _isExporting = false;
 
   void _handleLogout() {
@@ -74,10 +76,63 @@ class _AdminReportPageState extends State<AdminReportPage> {
           return !orderDate.isBefore(DateTime(weekStart.year, weekStart.month, weekStart.day));
         case 'Bulan Ini':
           return orderDate.month == now.month && orderDate.year == now.year;
+        case 'Bulan Spesifik':
+          return orderDate.year == _selectedYear && orderDate.month == _selectedMonth;
         default:
           return true;
       }
     }).toList();
+  }
+
+  Future<void> _pickMonth() async {
+    final now = DateTime.now();
+    final months = List.generate(24, (i) {
+      final dt = DateTime(now.year, now.month - i);
+      return dt;
+    });
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: 380,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(children: [
+          Container(margin: const EdgeInsets.only(top: 12), width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4))),
+          const SizedBox(height: 16),
+          const Text('Pilih Bulan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Expanded(child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, mainAxisSpacing: 10, crossAxisSpacing: 10, mainAxisExtent: 60),
+            itemCount: months.length,
+            itemBuilder: (ctx2, i) {
+              final m = months[i];
+              final sel = m.month == _selectedMonth && m.year == _selectedYear;
+              return GestureDetector(
+                onTap: () {
+                  setState(() { _selectedMonth = m.month; _selectedYear = m.year; _selectedRange = 'Bulan Spesifik'; });
+                  Navigator.pop(ctx);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: sel ? const Color(0xFF0D47A1) : const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: sel ? const Color(0xFF0D47A1) : Colors.grey.shade200),
+                  ),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text(DateFormat('MMM', 'id_ID').format(m), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: sel ? Colors.white : Colors.black87)),
+                    Text('${m.year}', style: TextStyle(fontSize: 11, color: sel ? Colors.white70 : Colors.grey.shade500)),
+                  ]),
+                ),
+              );
+            },
+          )),
+        ]),
+      ),
+    );
   }
 
   double get _totalIncome => _filteredTransactions.fold(0.0, (sum, o) => sum + o.price);
@@ -220,6 +275,10 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
                     // Service breakdown chart
                     _buildServiceChart(isPhone),
+                    const SizedBox(height: 24),
+
+                    // Staff Performance
+                    _buildStaffPerformance(),
                     const SizedBox(height: 32),
 
                     // Export Buttons
@@ -300,27 +359,50 @@ class _AdminReportPageState extends State<AdminReportPage> {
   }
 
   Widget _buildPeriodFilter() {
+    final isBulanSpesifik = _selectedRange == 'Bulan Spesifik';
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: ['Semua', 'Hari Ini', 'Minggu Ini', 'Bulan Ini'].map((p) {
-          bool sel = _selectedRange == p;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedRange = p),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: sel ? const Color(0xFF0D47A1) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: sel ? null : Border.all(color: Colors.grey.shade200),
+        children: [
+          ...['Semua', 'Hari Ini', 'Minggu Ini', 'Bulan Ini'].map((p) {
+            bool sel = _selectedRange == p;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedRange = p),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: sel ? const Color(0xFF0D47A1) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: sel ? null : Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(p, style: TextStyle(color: sel ? Colors.white : Colors.grey.shade600, fontWeight: sel ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
                 ),
-                child: Text(p, style: TextStyle(color: sel ? Colors.white : Colors.grey.shade600, fontWeight: sel ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
               ),
+            );
+          }),
+          // Month picker
+          GestureDetector(
+            onTap: _pickMonth,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isBulanSpesifik ? const Color(0xFF0D47A1) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: isBulanSpesifik ? null : Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.calendar_month_rounded, size: 14, color: isBulanSpesifik ? Colors.white : Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Text(
+                  isBulanSpesifik ? DateFormat('MMM yyyy', 'id_ID').format(DateTime(_selectedYear, _selectedMonth)) : 'Pilih Bulan',
+                  style: TextStyle(color: isBulanSpesifik ? Colors.white : Colors.grey.shade600, fontWeight: isBulanSpesifik ? FontWeight.bold : FontWeight.w500, fontSize: 13),
+                ),
+              ]),
             ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -485,6 +567,95 @@ class _AdminReportPageState extends State<AdminReportPage> {
     if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
     if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}K';
     return v.toStringAsFixed(0);
+  }
+
+  Widget _buildStaffPerformance() {
+    final transactions = _filteredTransactions;
+    final Map<String, Map<String, dynamic>> staffStats = {};
+
+    for (final o in transactions) {
+      final name = o.picName.isEmpty ? 'Tidak Ditugaskan' : o.picName;
+      if (!staffStats.containsKey(name)) {
+        staffStats[name] = {'orders': 0, 'revenue': 0.0};
+      }
+      staffStats[name]!['orders'] = (staffStats[name]!['orders'] as int) + 1;
+      staffStats[name]!['revenue'] = (staffStats[name]!['revenue'] as double) + o.price;
+    }
+
+    final sorted = staffStats.entries.toList()
+      ..sort((a, b) => (b.value['orders'] as int).compareTo(a.value['orders'] as int));
+
+    if (sorted.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 12, offset: const Offset(0, 6))]),
+        child: Center(child: Text('Tidak ada data staf', style: TextStyle(color: Colors.grey.shade400))),
+      );
+    }
+
+    final maxOrders = (sorted.first.value['orders'] as int).toDouble();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white, borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 12, offset: const Offset(0, 6))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFF0D47A1).withAlpha(20), borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.people_alt_rounded, color: Color(0xFF0D47A1), size: 18)),
+          const SizedBox(width: 10),
+          const Text('Performa Staf', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1C2E))),
+          const Spacer(),
+          Text('Periode: $_selectedRange', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        ]),
+        const SizedBox(height: 4),
+        Text('Berdasarkan jumlah order yang ditangani', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+        const SizedBox(height: 16),
+        ...sorted.asMap().entries.map((e) {
+          final idx = e.key;
+          final name = e.value.key;
+          final orders = e.value.value['orders'] as int;
+          final revenue = e.value.value['revenue'] as double;
+          final progress = maxOrders > 0 ? orders / maxOrders : 0.0;
+          final medal = idx == 0 ? '🥇' : idx == 1 ? '🥈' : idx == 2 ? '🥉' : '${idx + 1}.';
+          final colors = [
+            const Color(0xFF0D47A1),
+            const Color(0xFF1565C0),
+            const Color(0xFF1976D2),
+            const Color(0xFF1E88E5),
+            const Color(0xFF42A5F5),
+          ];
+          final barColor = colors[idx < colors.length ? idx : colors.length - 1];
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Column(children: [
+              Row(children: [
+                SizedBox(width: 28, child: Text(medal, style: const TextStyle(fontSize: 14))),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1C2E))),
+                    Text('$orders order  ·  ${_fmt(revenue)}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                  ]),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.grey.shade100,
+                      valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                      minHeight: 8,
+                    ),
+                  ),
+                ])),
+              ]),
+            ]),
+          );
+        }),
+      ]),
+    );
   }
 
   Widget _buildExportButtons() {

@@ -1,4 +1,4 @@
-﻿import 'package:intl/intl.dart';
+import 'package:intl/intl.dart';
 
 class PriceConfig {
   final String service;
@@ -35,6 +35,13 @@ class OrderData {
   String status;
   String? picId;
   String picName;
+  String? picWashId;
+  String? picWashName;
+  String? picIronId;
+  String? picIronName;
+  String? picPackId;
+  String? picPackName;
+  String? shiftId;
   String notes;
   String estimatedDate;
   DateTime orderTime;
@@ -52,6 +59,13 @@ class OrderData {
     required this.status,
     this.picId,
     this.picName = '',
+    this.picWashId,
+    this.picWashName,
+    this.picIronId,
+    this.picIronName,
+    this.picPackId,
+    this.picPackName,
+    this.shiftId,
     this.notes = '',
     this.estimatedDate = '',
     DateTime? orderTime,
@@ -62,7 +76,12 @@ class OrderData {
   OrderData copyWith({
     String? id, String? customer, String? phone, String? service,
     double? weight, int? pricePerUnit, int? price, String? status,
-    String? picId, String? picName, String? notes, String? estimatedDate,
+    String? picId, String? picName, 
+    String? picWashId, String? picWashName,
+    String? picIronId, String? picIronName,
+    String? picPackId, String? picPackName,
+    String? shiftId,
+    String? notes, String? estimatedDate,
     DateTime? orderTime, DateTime? completedTime, DateTime? pickedUpTime,
   }) => OrderData(
     id: id ?? this.id, customer: customer ?? this.customer,
@@ -70,6 +89,10 @@ class OrderData {
     weight: weight ?? this.weight, pricePerUnit: pricePerUnit ?? this.pricePerUnit,
     price: price ?? this.price, status: status ?? this.status,
     picId: picId ?? this.picId, picName: picName ?? this.picName,
+    picWashId: picWashId ?? this.picWashId, picWashName: picWashName ?? this.picWashName,
+    picIronId: picIronId ?? this.picIronId, picIronName: picIronName ?? this.picIronName,
+    picPackId: picPackId ?? this.picPackId, picPackName: picPackName ?? this.picPackName,
+    shiftId: shiftId ?? this.shiftId,
     notes: notes ?? this.notes, estimatedDate: estimatedDate ?? this.estimatedDate,
     orderTime: orderTime ?? this.orderTime,
     completedTime: completedTime ?? this.completedTime,
@@ -87,6 +110,13 @@ class OrderData {
     status: json['status'] ?? 'Proses',
     picId: json['pic_id'],
     picName: json['pic_name'] ?? '',
+    picWashId: json['pic_wash_id'],
+    picWashName: json['pic_wash_name'],
+    picIronId: json['pic_iron_id'],
+    picIronName: json['pic_iron_name'],
+    picPackId: json['pic_pack_id'],
+    picPackName: json['pic_pack_name'],
+    shiftId: json['shift_id'],
     notes: json['notes'] ?? '',
     estimatedDate: json['estimated_date'] ?? '',
     orderTime: json['order_time'] != null ? DateTime.parse(json['order_time']).toLocal() : DateTime.now(),
@@ -100,6 +130,10 @@ class OrderData {
     'service': service, 'weight': weight,
     'price_per_unit': pricePerUnit, 'price': price, 'status': status,
     'pic_id': picId, 'pic_name': picName,
+    'pic_wash_id': picWashId, 'pic_wash_name': picWashName,
+    'pic_iron_id': picIronId, 'pic_iron_name': picIronName,
+    'pic_pack_id': picPackId, 'pic_pack_name': picPackName,
+    'shift_id': shiftId,
     'notes': notes.isEmpty ? null : notes,
     'estimated_date': estimatedDate.isEmpty ? null : estimatedDate,
     'order_time': orderTime.toUtc().toIso8601String(),
@@ -183,4 +217,92 @@ class AppState {
     try { return prices.firstWhere((p) => p.service == service); }
     catch (_) { return null; }
   }
+}
+
+class CashierShift {
+  final String id;
+  final String staffId;
+  final DateTime openedAt;
+  final DateTime? closedAt;
+  final double? openingCash;
+  final double? closingPhysicalCash;
+  final double? totalRevenue;
+  final String? notes;
+
+  CashierShift({
+    required this.id,
+    required this.staffId,
+    required this.openedAt,
+    this.closedAt,
+    this.openingCash,
+    this.closingPhysicalCash,
+    this.totalRevenue,
+    this.notes,
+  });
+
+  factory CashierShift.fromJson(Map<String, dynamic> json) => CashierShift(
+    id: json['id'],
+    staffId: json['staff_id'],
+    openedAt: DateTime.parse(json['opened_at']).toLocal(),
+    closedAt: json['closed_at'] != null ? DateTime.parse(json['closed_at']).toLocal() : null,
+    openingCash: (json['opening_cash'] ?? 0).toDouble(),
+    closingPhysicalCash: json['closing_physical_cash'] != null ? (json['closing_physical_cash'] ?? 0).toDouble() : null,
+    totalRevenue: (json['total_revenue'] ?? 0).toDouble(),
+    notes: json['notes'],
+  );
+
+  Map<String, dynamic> toMap() => {
+    'staff_id': staffId,
+    'opened_at': openedAt.toUtc().toIso8601String(),
+    'closed_at': closedAt?.toUtc().toIso8601String(),
+    'opening_cash': openingCash,
+    'closing_physical_cash': closingPhysicalCash,
+    'total_revenue': totalRevenue,
+    'notes': notes,
+  };
+}
+
+enum AuditActionType { void_order, price_change, delete_order, manual_status_change }
+
+class AuditLog {
+  final String id;
+  final AuditActionType action;
+  final String? orderId;
+  final String staffId;
+  final Map<String, dynamic>? oldData;
+  final Map<String, dynamic>? newData;
+  final String? reason;
+  final DateTime createdAt;
+
+  AuditLog({
+    required this.id,
+    required this.action,
+    this.orderId,
+    required this.staffId,
+    this.oldData,
+    this.newData,
+    this.reason,
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
+
+  factory AuditLog.fromJson(Map<String, dynamic> json) => AuditLog(
+    id: json['id'],
+    action: AuditActionType.values.firstWhere((e) => e.name == json['action']),
+    orderId: json['order_id'],
+    staffId: json['staff_id'],
+    oldData: json['old_data'],
+    newData: json['new_data'],
+    reason: json['reason'],
+    createdAt: DateTime.parse(json['created_at']).toLocal(),
+  );
+
+  Map<String, dynamic> toMap() => {
+    'action': action.name,
+    'order_id': orderId,
+    'staff_id': staffId,
+    'old_data': oldData,
+    'new_data': newData,
+    'reason': reason,
+    'created_at': createdAt.toUtc().toIso8601String(),
+  };
 }

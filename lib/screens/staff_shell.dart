@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/app_data.dart';
 import '../services/order_service.dart';
@@ -72,21 +72,67 @@ class _StaffShellState extends State<StaffShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      StaffDashboardView(appState: _appState, onRefresh: _refresh),
+      StaffDashboardView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder),
       StaffNewOrderView(appState: _appState, onAddOrder: _addOrder, onRefresh: _refresh),
       ScanBarcodeView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder),
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Stack(
-        children: [
-          IndexedStack(index: _currentIndex, children: pages),
-          if (_isLoading)
-            Container(color: Colors.white.withAlpha(180), child: const Center(child: CircularProgressIndicator())),
-          Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNav()),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isTablet = constraints.maxWidth > 600;
+
+          if (isTablet) {
+            return Row(
+              children: [
+                _buildNavRail(),
+                const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE0E0E0)),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      IndexedStack(index: _currentIndex, children: pages),
+                      if (_isLoading) Container(color: Colors.white.withAlpha(180), child: const Center(child: CircularProgressIndicator())),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Stack(
+            children: [
+              IndexedStack(index: _currentIndex, children: pages),
+              if (_isLoading)
+                Container(color: Colors.white.withAlpha(180), child: const Center(child: CircularProgressIndicator())),
+              Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNav()),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildNavRail() {
+    return NavigationRail(
+      selectedIndex: _currentIndex,
+      onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+      labelType: NavigationRailLabelType.all,
+      backgroundColor: Colors.white,
+      selectedIconTheme: const IconThemeData(color: Color(0xFF1E88E5), size: 28),
+      unselectedIconTheme: IconThemeData(color: Colors.grey.shade400, size: 24),
+      selectedLabelTextStyle: const TextStyle(color: Color(0xFF1E88E5), fontWeight: FontWeight.bold, fontSize: 12),
+      unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+      indicatorColor: const Color(0xFFDCEDFF),
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Icon(Icons.local_laundry_service_rounded, color: const Color(0xFF1E88E5), size: 32),
+      ),
+      destinations: const [
+        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Dashboard')),
+        NavigationRailDestination(icon: Icon(Icons.add_circle_outline_rounded), label: Text('Input')),
+        NavigationRailDestination(icon: Icon(Icons.qr_code_scanner_rounded), label: Text('Scan')),
+      ],
     );
   }
 

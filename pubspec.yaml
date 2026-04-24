@@ -48,6 +48,7 @@ dependencies:
   blue_thermal_printer: ^1.2.3
   esc_pos_utils_plus: ^2.0.4
   shared_preferences: ^2.5.5
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

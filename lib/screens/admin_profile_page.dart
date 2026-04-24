@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/app_data.dart';
 import '../services/supabase_service.dart';
+import 'admin_price_management_page.dart';
 
 class AdminProfilePage extends StatefulWidget {
   final AppState appState;
@@ -128,6 +129,29 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               _statRow('Pesanan Diproses', '${widget.appState.totalProses}'),
               _statRow('Sudah Diambil', '${widget.appState.totalSudahDiambil}'),
             ]),
+          ),
+          const SizedBox(height: 20),
+
+          // Price Management
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminPriceManagementPage(
+              prices: widget.appState.prices,
+              onPriceUpdated: () {},
+            ))),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 12, offset: const Offset(0, 4))]),
+              child: Row(children: [
+                Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFF0D47A1).withAlpha(15), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.price_change_rounded, color: Color(0xFF0D47A1), size: 22)),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Manajemen Harga', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text('Atur harga per layanan laundry', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                ])),
+                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.black26),
+              ]),
+            ),
           ),
           const SizedBox(height: 20),
 

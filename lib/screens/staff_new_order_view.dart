@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -168,115 +168,151 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
 
     return Column(children: [
       Container(
-        padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1565C0), Color(0xFF1E88E5)], begin: Alignment.topLeft, end: Alignment.bottomRight)),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 10)),
+          ],
+        ),
+        child: Stack(
           children: [
-            Row(children: [
-              const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 28),
-              const SizedBox(width: 12),
-              Text('Input Pesanan Baru', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-            ]),
-            IconButton(
-              icon: const Icon(Icons.print_rounded, color: Colors.white),
-              onPressed: () => PrinterSettingsDialog.show(context),
-            )
-          ]
+            Positioned(
+              right: -10, top: -20,
+              child: Icon(Icons.add_task_rounded, size: 100, color: Colors.white.withAlpha(15)),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Input Pesanan Baru', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
+                      Text('Silakan isi formulir di bawah ini', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(200))),
+                    ],
+                  ),
+                ]),
+                Container(
+                  decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(14)),
+                  child: IconButton(
+                    icon: const Icon(Icons.print_rounded, color: Colors.white),
+                    onPressed: () => PrinterSettingsDialog.show(context),
+                    tooltip: 'Pengaturan Printer',
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
       Expanded(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _card(children: [
-            _label('TANGGAL & JAM ORDER'),
-            GestureDetector(
-              onTap: () async {
-                final d = await showDatePicker(context: context, initialDate: _orderTime, firstDate: DateTime.now().subtract(const Duration(days: 1)), lastDate: DateTime.now().add(const Duration(days: 1)));
-                if (d != null) setState(() => _orderTime = DateTime(d.year, d.month, d.day, _orderTime.hour, _orderTime.minute));
-              },
-              child: _displayField(Icons.calendar_today_outlined, DateFormat('dd MMM yyyy, HH:mm').format(_orderTime)),
-            ),
-          ]),
-          const SizedBox(height: 16),
-          _card(children: [
-            _label('NAMA PELANGGAN *'),
-            _textField(_customerCtrl, Icons.person_outline, 'Nama pelanggan'),
-            const SizedBox(height: 16),
-            _label('NOMOR TELEPON'),
-            _textField(_phoneCtrl, Icons.phone_outlined, '0812xxxx', type: TextInputType.phone),
-          ]),
-          const SizedBox(height: 16),
-          _card(children: [
-            _label('PIC (PENANGGUNG JAWAB)'),
-            _displayField(Icons.badge_outlined, widget.appState.currentUser?.name ?? 'Staff (Auto)'),
-          ]),
-          const SizedBox(height: 16),
-          _card(children: [
-            _label('JENIS LAYANAN *'),
-            const SizedBox(height: 8),
-            Wrap(spacing: 8, runSpacing: 8, children: widget.appState.prices.map((p) {
-              final sel = _selectedService == p.service;
-              return GestureDetector(
-                onTap: () => _onServiceChanged(p.service),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: sel ? const Color(0xFF1E88E5) : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: sel ? const Color(0xFF1E88E5) : Colors.grey.shade200),
-                  ),
-                  child: Column(children: [
-                    Text(p.service, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: sel ? Colors.white : Colors.grey.shade700)),
-                    Text(_fmt(p.pricePerUnit) + '/${p.unit}', style: TextStyle(fontSize: 10, color: sel ? Colors.white70 : Colors.grey.shade500)),
-                  ]),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _card(children: [
+                _label('TANGGAL & JAM ORDER'),
+                GestureDetector(
+                  onTap: () async {
+                    final d = await showDatePicker(context: context, initialDate: _orderTime, firstDate: DateTime.now().subtract(const Duration(days: 1)), lastDate: DateTime.now().add(const Duration(days: 1)));
+                    if (d != null) setState(() => _orderTime = DateTime(d.year, d.month, d.day, _orderTime.hour, _orderTime.minute));
+                  },
+                  child: _displayField(Icons.calendar_today_outlined, DateFormat('dd MMM yyyy, HH:mm').format(_orderTime)),
                 ),
-              );
-            }).toList()),
-          ]),
-          const SizedBox(height: 16),
-          _card(children: [
-            _label('BERAT / JUMLAH ($unit) *'),
-            _textField(_weightCtrl, Icons.scale_outlined, 'Contoh: 3.5', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
-            const SizedBox(height: 16),
-            _label('ESTIMASI SELESAI'),
-            GestureDetector(
-              onTap: () async {
-                final d = await showDatePicker(context: context, initialDate: _estimatedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 30)));
-                if (d != null) setState(() => _estimatedDate = d);
-              },
-              child: _displayField(Icons.event_outlined, DateFormat('dd MMMM yyyy', 'id_ID').format(_estimatedDate)),
-            ),
-          ]),
-          const SizedBox(height: 16),
-          _card(children: [
-            _label('CATATAN'),
-            _textField(_noteCtrl, Icons.notes_outlined, 'Misal: Jangan disetrika, pisah warna putih', maxLines: 3),
-          ]),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: const Color(0xFF1E88E5), borderRadius: BorderRadius.circular(20)),
-            child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('TOTAL BIAYA', style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold)),
-                Text(_fmt(_totalPrice), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
-                Text('${cfg != null ? _fmt(cfg.pricePerUnit) : "-"}/$unit x $_weight $unit', style: TextStyle(fontSize: 11, color: Colors.white60)),
               ]),
-              const Icon(Icons.receipt_long_rounded, color: Colors.white38, size: 40),
+              const SizedBox(height: 16),
+              _card(children: [
+                _label('NAMA PELANGGAN *'),
+                _textField(_customerCtrl, Icons.person_outline, 'Nama pelanggan'),
+                const SizedBox(height: 16),
+                _label('NOMOR TELEPON'),
+                _textField(_phoneCtrl, Icons.phone_outlined, '0812xxxx', type: TextInputType.phone),
+              ]),
+              const SizedBox(height: 16),
+              _card(children: [
+                _label('PIC (PENANGGUNG JAWAB)'),
+                _displayField(Icons.badge_outlined, widget.appState.currentUser?.name ?? 'Staff (Auto)'),
+              ]),
+              const SizedBox(height: 16),
+              _card(children: [
+                _label('JENIS LAYANAN *'),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, runSpacing: 8, children: widget.appState.prices.map((p) {
+                  final sel = _selectedService == p.service;
+                  return GestureDetector(
+                    onTap: () => _onServiceChanged(p.service),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: sel ? const Color(0xFF1E88E5) : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: sel ? const Color(0xFF1E88E5) : Colors.grey.shade200),
+                      ),
+                      child: Column(children: [
+                        Text(p.service, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: sel ? Colors.white : Colors.grey.shade700)),
+                        Text(_fmt(p.pricePerUnit) + '/${p.unit}', style: TextStyle(fontSize: 10, color: sel ? Colors.white70 : Colors.grey.shade500)),
+                      ]),
+                    ),
+                  );
+                }).toList()),
+              ]),
+              const SizedBox(height: 16),
+              _card(children: [
+                _label('BERAT / JUMLAH ($unit) *'),
+                _textField(_weightCtrl, Icons.scale_outlined, 'Contoh: 3.5', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
+                const SizedBox(height: 16),
+                _label('ESTIMASI SELESAI'),
+                GestureDetector(
+                  onTap: () async {
+                    final d = await showDatePicker(context: context, initialDate: _estimatedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 30)));
+                    if (d != null) setState(() => _estimatedDate = d);
+                  },
+                  child: _displayField(Icons.event_outlined, DateFormat('dd MMMM yyyy', 'id_ID').format(_estimatedDate)),
+                ),
+              ]),
+              const SizedBox(height: 16),
+              _card(children: [
+                _label('CATATAN'),
+                _textField(_noteCtrl, Icons.notes_outlined, 'Misal: Jangan disetrika, pisah warna putih', maxLines: 3),
+              ]),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: const Color(0xFF1E88E5), borderRadius: BorderRadius.circular(20)),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('TOTAL BIAYA', style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold)),
+                    Text(_fmt(_totalPrice), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
+                    Text('${cfg != null ? _fmt(cfg.pricePerUnit) : "-"}/$unit x $_weight $unit', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                  ]),
+                  const Icon(Icons.receipt_long_rounded, color: Colors.white38, size: 40),
+                ]),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 60,
+                child: ElevatedButton.icon(
+                  onPressed: _submitOrder,
+                  icon: const Icon(Icons.print_rounded),
+                  label: Text('Simpan & Cetak Struk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+                ),
+              ),
             ]),
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity, height: 60,
-            child: ElevatedButton.icon(
-              onPressed: _submitOrder,
-              icon: const Icon(Icons.print_rounded),
-              label: Text('Simpan & Cetak Struk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-            ),
-          ),
-        ]),
+        ),
       )),
     ]);
   }

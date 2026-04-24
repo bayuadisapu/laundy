@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/app_data.dart';
 import '../services/order_service.dart';
 import '../services/staff_service.dart';
 import 'admin_dashboard_view.dart';
 import 'admin_orders_page.dart';
+import 'admin_customers_page.dart';
 import 'admin_staff_page.dart';
 import 'admin_profile_page.dart';
 
@@ -89,17 +90,66 @@ class _AdminShellState extends State<AdminShell> {
     final pages = [
       AdminDashboardPage(appState: _appState, onRefresh: _refresh),
       AdminOrdersPage(appState: _appState, onAddOrder: _addOrder, onRefresh: _refresh, onDeleteOrder: _deleteOrder, onUpdateOrder: _updateOrder, onCancelPickup: _cancelPickup),
+      AdminCustomersPage(appState: _appState),
       AdminStaffPage(appState: _appState, onAddStaff: _addStaff, onDeleteStaff: _deleteStaff, onUpdateStaff: _updateStaff),
       AdminProfilePage(appState: _appState),
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Stack(children: [
-        IndexedStack(index: _currentIndex, children: pages),
-        if (_isLoading) Container(color: Colors.white.withAlpha(180), child: const Center(child: CircularProgressIndicator())),
-        Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNav()),
-      ]),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isTablet = constraints.maxWidth > 600;
+          
+          if (isTablet) {
+            return Row(
+              children: [
+                _buildNavRail(),
+                const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE0E0E0)),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      IndexedStack(index: _currentIndex, children: pages),
+                      if (_isLoading) Container(color: Colors.white.withAlpha(180), child: const Center(child: CircularProgressIndicator())),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Stack(children: [
+            IndexedStack(index: _currentIndex, children: pages),
+            if (_isLoading) Container(color: Colors.white.withAlpha(180), child: const Center(child: CircularProgressIndicator())),
+            Positioned(left: 0, right: 0, bottom: 0, child: _buildBottomNav()),
+          ]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavRail() {
+    return NavigationRail(
+      selectedIndex: _currentIndex,
+      onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+      labelType: NavigationRailLabelType.all,
+      backgroundColor: Colors.white,
+      selectedIconTheme: const IconThemeData(color: Color(0xFF0D47A1), size: 28),
+      unselectedIconTheme: IconThemeData(color: Colors.grey.shade400, size: 24),
+      selectedLabelTextStyle: const TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold, fontSize: 12),
+      unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+      indicatorColor: const Color(0xFFDCEDFF),
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Image.network('https://i.imgur.com/89kR6K8.png', width: 40, height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.local_laundry_service_rounded, color: Color(0xFF0D47A1), size: 32)),
+      ),
+      destinations: const [
+        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Dashboard')),
+        NavigationRailDestination(icon: Icon(Icons.local_laundry_service_rounded), label: Text('Pesanan')),
+        NavigationRailDestination(icon: Icon(Icons.people_alt_rounded), label: Text('Pelanggan')),
+        NavigationRailDestination(icon: Icon(Icons.badge_rounded), label: Text('Staff')),
+        NavigationRailDestination(icon: Icon(Icons.person_rounded), label: Text('Profil')),
+      ],
     );
   }
 
@@ -113,8 +163,9 @@ class _AdminShellState extends State<AdminShell> {
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           _navItem(Icons.dashboard_rounded, 'Dashboard', 0),
           _navItem(Icons.local_laundry_service_rounded, 'Pesanan', 1),
-          _navItem(Icons.people_rounded, 'Staff', 2),
-          _navItem(Icons.person_rounded, 'Profil', 3),
+          _navItem(Icons.people_alt_rounded, 'Pelanggan', 2),
+          _navItem(Icons.badge_rounded, 'Staff', 3),
+          _navItem(Icons.person_rounded, 'Profil', 4),
         ]),
       ),
     );
