@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -126,7 +126,7 @@ class _PesananViewState extends State<PesananView> {
                             const SizedBox(height: 4),
                             Text(o.customer, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C1E))),
                             const SizedBox(height: 4),
-                            Text('${o.service} â€¢ ${o.weight} Kg', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                            Text('${o.service} • ${o.weight} Kg', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                           ],
                         ),
                       ),

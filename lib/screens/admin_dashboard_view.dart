@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 import 'package:excel/excel.dart' hide Border;
@@ -137,7 +137,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             SizedBox(width: double.infinity, child: OutlinedButton.icon(
               onPressed: _exportExcel,
               icon: const Icon(Icons.download_rounded),
-              label: Text('Export Excel â€” $_period', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: Text('Export Excel - $_period', style: TextStyle(fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF0D47A1), side: const BorderSide(color: Color(0xFF0D47A1)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
             )),
             const SizedBox(height: 24),
@@ -214,7 +214,7 @@ class _OrderRow extends StatelessWidget {
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(order.customer, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        Text('${order.id} â€¢ ${order.service} â€¢ PIC: ${order.picName}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        Text('${order.id} • ${order.service} • PIC: ${order.picName}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
       ])),
       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: _statusColor.withAlpha(20), borderRadius: BorderRadius.circular(8)),
