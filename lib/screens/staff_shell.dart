@@ -5,6 +5,8 @@ import '../services/order_service.dart';
 import 'staff_dashboard_view.dart';
 import 'staff_new_order_view.dart';
 import 'scan_barcode_view.dart';
+import 'history_page.dart';
+import '../services/shop_service.dart';
 
 class StaffShell extends StatefulWidget {
   final AppState appState;
@@ -28,13 +30,19 @@ class _StaffShellState extends State<StaffShell> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final orders = await OrderService().fetchOrders();
-      final prices = await OrderService().fetchPrices();
+      final shopId = _appState.currentUser?.shopId;
+      if (shopId == null) throw Exception('Toko tidak ditemukan untuk akun ini.');
+
+      final orders = await OrderService().fetchOrders(shopId);
+      final prices = await OrderService().fetchPrices(shopId);
+      final shop = await ShopService().fetchShop(shopId);
+      
       if (!mounted) return;
       setState(() {
         _appState.orders.clear();
         _appState.orders.addAll(orders);
         _appState.prices = prices;
+        _appState.currentShop = shop;
       });
     } catch (e) {
       if (!mounted) return;
@@ -49,14 +57,9 @@ class _StaffShellState extends State<StaffShell> {
 
   void _refresh() => _loadData();
 
-  void _addOrder(OrderData order) async {
-    try {
-      await OrderService().addOrder(order);
-      _loadData();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
-    }
+  Future<void> _addOrder(OrderData order) async {
+    await OrderService().addOrder(order);
+    _loadData();
   }
 
   void _updateOrder(OrderData order) async {
@@ -75,6 +78,7 @@ class _StaffShellState extends State<StaffShell> {
       StaffDashboardView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder),
       StaffNewOrderView(appState: _appState, onAddOrder: _addOrder, onRefresh: _refresh),
       ScanBarcodeView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder),
+      HistoryPage(appState: _appState, isAdmin: false, onRefresh: _refresh, onUpdateOrder: _updateOrder),
     ];
 
     return Scaffold(
@@ -132,6 +136,7 @@ class _StaffShellState extends State<StaffShell> {
         NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Dashboard')),
         NavigationRailDestination(icon: Icon(Icons.add_circle_outline_rounded), label: Text('Input')),
         NavigationRailDestination(icon: Icon(Icons.qr_code_scanner_rounded), label: Text('Scan')),
+        NavigationRailDestination(icon: Icon(Icons.history_rounded), label: Text('Riwayat')),
       ],
     );
   }
@@ -151,8 +156,9 @@ class _StaffShellState extends State<StaffShell> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _navItem(Icons.dashboard_rounded, 'Dashboard', 0),
-            _navItem(Icons.add_circle_outline_rounded, 'Input Pesanan', 1),
-            _navItem(Icons.qr_code_scanner_rounded, 'Scan Barcode', 2),
+            _navItem(Icons.add_circle_outline_rounded, 'Input', 1),
+            _navItem(Icons.qr_code_scanner_rounded, 'Scan', 2),
+            _navItem(Icons.history_rounded, 'Riwayat', 3),
           ],
         ),
       ),

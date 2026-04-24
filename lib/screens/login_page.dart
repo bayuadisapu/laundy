@@ -38,10 +38,11 @@ class _LoginPageState extends State<LoginPage> {
       if (response.user == null) throw Exception('Login gagal');
       final profile = await SupabaseService.client.from('users').select().eq('id', response.user!.id).single();
       final role = profile['role'] as String? ?? 'staff';
+      final shopId = profile['shop_id']?.toString();
       // Save current user to global state
       globalAppState.currentUser = StaffData.fromJson(profile);
       // Load prices
-      globalAppState.prices = await OrderService().fetchPrices();
+      globalAppState.prices = await OrderService().fetchPrices(shopId);
       if (!mounted) return;
       if (role == 'admin') {
         Navigator.pushReplacementNamed(context, '/admin');
@@ -157,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      Text('Â© 2026 LaundryKu Premium Edition', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                      Text('© 2026 LaundryKu Premium Edition', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),

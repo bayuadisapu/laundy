@@ -128,6 +128,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Excel disimpan: $fileName'), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16)));
   }
 
+  void _showShopPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Pilih Cabang / Toko', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+          ...widget.appState.allShops.map((s) => ListTile(
+            leading: const Icon(Icons.storefront_rounded, color: Color(0xFF0D47A1)),
+            title: Text(s.name, style: TextStyle(fontWeight: widget.appState.currentShop.id == s.id ? FontWeight.bold : FontWeight.normal)),
+            subtitle: Text(s.address, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: widget.appState.currentShop.id == s.id ? const Icon(Icons.check_circle_rounded, color: Colors.green) : null,
+            onTap: () {
+              widget.appState.currentShop = s;
+              Navigator.pop(ctx);
+              widget.onRefresh();
+            },
+          )),
+          const SizedBox(height: 24),
+        ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final range = _getPeriodRange();
@@ -163,7 +190,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               const SizedBox(width: 16),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('LaundryKu Admin', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
+                Row(
+                  children: [
+                    Flexible(child: Text('${widget.appState.currentShop.name} Admin', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5), overflow: TextOverflow.ellipsis)),
+                    if (widget.appState.allShops.length > 1)
+                      GestureDetector(
+                        onTap: _showShopPicker,
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 16),
+                        ),
+                      ),
+                  ],
+                ),
                 Text(DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.now()), style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(200))),
               ])),
               Container(
@@ -321,63 +362,141 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildTrendChart() {
+    final range = _getPeriodRange();
     final now = DateTime.now();
-    final days = List.generate(30, (i) => now.subtract(Duration(days: 29 - i)));
-    final Map<String, double> dailyRevenue = {for (var d in days) DateFormat('dd/MM').format(d): 0.0};
-    for (final o in widget.appState.orders) {
-      if (o.pickedUpTime != null) {
-        final key = DateFormat('dd/MM').format(o.pickedUpTime!);
-        if (dailyRevenue.containsKey(key)) dailyRevenue[key] = (dailyRevenue[key] ?? 0) + o.price;
+    
+    // Generate labels and data structure based on period
+    Map<String, double> dataMap = {};
+    int interval = 1;
+    String chartTitle = 'Tren Pendapatan';
+    String xLabel = '';
+
+    if (_period == 'Hari Ini') {
+      chartTitle = 'Tren Pendapatan (24 Jam Terakhir)';
+      for (int i = 0; i < 24; i++) {
+        final hour = DateTime(now.year, now.month, now.day, i);
+        dataMap[DateFormat('HH').format(hour)] = 0.0;
       }
+      for (final o in widget.appState.orders) {
+        if (o.status == 'Sudah Diambil' && o.pickedUpTime != null && o.pickedUpTime!.isAfter(range.start)) {
+          final key = DateFormat('HH').format(o.pickedUpTime!);
+          if (dataMap.containsKey(key)) dataMap[key] = (dataMap[key] ?? 0) + o.price;
+        }
+      }
+      interval = 4;
+      xLabel = 'Jam';
+    } else if (_period == 'Minggu Ini') {
+      chartTitle = 'Tren Pendapatan (7 Hari Terakhir)';
+      for (int i = 6; i >= 0; i--) {
+        final date = now.subtract(Duration(days: i));
+        dataMap[DateFormat('dd/MM').format(date)] = 0.0;
+      }
+      for (final o in widget.appState.orders) {
+        if (o.status == 'Sudah Diambil' && o.pickedUpTime != null && o.pickedUpTime!.isAfter(range.start)) {
+          final key = DateFormat('dd/MM').format(o.pickedUpTime!);
+          if (dataMap.containsKey(key)) dataMap[key] = (dataMap[key] ?? 0) + o.price;
+        }
+      }
+      interval = 1;
+      xLabel = 'Tanggal';
+    } else if (_period == 'Bulan Ini') {
+      chartTitle = 'Tren Pendapatan (Bulan Ini)';
+      for (int i = 29; i >= 0; i--) {
+        final date = now.subtract(Duration(days: i));
+        dataMap[DateFormat('dd').format(date)] = 0.0;
+      }
+      for (final o in widget.appState.orders) {
+        if (o.status == 'Sudah Diambil' && o.pickedUpTime != null && o.pickedUpTime!.isAfter(range.start)) {
+          final key = DateFormat('dd').format(o.pickedUpTime!);
+          if (dataMap.containsKey(key)) dataMap[key] = (dataMap[key] ?? 0) + o.price;
+        }
+      }
+      interval = 5;
+      xLabel = 'Tanggal';
+    } else {
+      chartTitle = 'Tren Pendapatan Tahunan';
+      for (int i = 1; i <= 12; i++) {
+        dataMap[i.toString().padLeft(2, '0')] = 0.0;
+      }
+      for (final o in widget.appState.orders) {
+        if (o.status == 'Sudah Diambil' && o.pickedUpTime != null && o.pickedUpTime!.year == now.year) {
+          final key = DateFormat('MM').format(o.pickedUpTime!);
+          if (dataMap.containsKey(key)) dataMap[key] = (dataMap[key] ?? 0) + o.price;
+        }
+      }
+      interval = 2;
+      xLabel = 'Bulan';
     }
-    final spots = dailyRevenue.values.toList().asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value / 1000)).toList();
+
+    final spots = dataMap.values.toList().asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value / 1000)).toList();
     final rawMax = spots.map((s) => s.y).fold(0.0, (a, b) => a > b ? a : b);
-    final maxY = rawMax > 0 ? rawMax * 1.2 : 10.0;
+    final maxY = rawMax > 0 ? rawMax * 1.3 : 10.0;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 12, offset: const Offset(0, 6))],
+        color: Colors.white, borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 20, offset: const Offset(0, 10))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('Tren Pendapatan 30 Hari', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1A1C2E))),
-          Text('ribuan Rp', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+          Text(chartTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1A1C2E))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: const Color(0xFF0D47A1).withAlpha(15), borderRadius: BorderRadius.circular(8)),
+            child: Text('dalam ribuan Rp', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1))),
+          ),
         ]),
-        const SizedBox(height: 4),
-        Text('Berdasarkan waktu checkout', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         SizedBox(
-          height: 150,
+          height: 180,
           child: LineChart(LineChartData(
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipColor: (_) => const Color(0xFF1A1C2E),
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((s) => LineTooltipItem(
+                    '${dataMap.keys.elementAt(s.x.toInt())}\nRp ${NumberFormat('#,###').format(s.y * 1000)}',
+                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                  )).toList();
+                },
+              ),
+            ),
             minY: 0, maxY: maxY,
-            gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: maxY / 4,
+            gridData: FlGridData(show: true, drawVerticalLine: false, horizontalInterval: maxY > 0 ? maxY / 4 : 2.5,
               getDrawingHorizontalLine: (v) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
             titlesData: FlTitlesData(
               topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, interval: 7,
+              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, interval: interval.toDouble(),
                 getTitlesWidget: (v, _) {
                   final idx = v.toInt();
-                  if (idx < 0 || idx >= dailyRevenue.length) return const SizedBox.shrink();
-                  return Padding(padding: const EdgeInsets.only(top: 6),
-                    child: Text(dailyRevenue.keys.elementAt(idx), style: TextStyle(fontSize: 9, color: Colors.grey.shade400)));
+                  if (idx < 0 || idx >= dataMap.length) return const SizedBox.shrink();
+                  return Padding(padding: const EdgeInsets.only(top: 8),
+                    child: Text(dataMap.keys.elementAt(idx), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey.shade400)));
                 })),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 36,
-                getTitlesWidget: (v, _) => Text('${v.toInt()}K', style: TextStyle(fontSize: 9, color: Colors.grey.shade400)))),
+              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40,
+                getTitlesWidget: (v, _) => Text('${v.toInt()}K', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey.shade400)))),
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: [LineChartBarData(
               spots: spots, isCurved: true,
-              color: const Color(0xFF0D47A1), barWidth: 2.5,
+              color: const Color(0xFF0D47A1), barWidth: 4,
+              isStrokeCapRound: true,
               belowBarData: BarAreaData(show: true, gradient: LinearGradient(
-                colors: [const Color(0xFF0D47A1).withAlpha(40), const Color(0xFF0D47A1).withAlpha(0)],
+                colors: [const Color(0xFF0D47A1).withAlpha(50), const Color(0xFF0D47A1).withAlpha(0)],
                 begin: Alignment.topCenter, end: Alignment.bottomCenter,
               )),
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(show: spots.length < 15, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 4, color: Colors.white, strokeWidth: 3, strokeColor: const Color(0xFF0D47A1))),
             )],
           )),
         ),
+        const SizedBox(height: 12),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF0D47A1), shape: BoxShape.circle)),
+          const SizedBox(width: 8),
+          Text('Sumbu X: $xLabel', style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+        ]),
       ]),
     );
   }

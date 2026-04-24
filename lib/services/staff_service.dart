@@ -6,12 +6,12 @@ import 'supabase_service.dart';
 class StaffService {
   final _supabase = SupabaseService.client;
 
-  Future<List<StaffData>> fetchStaff() async {
-    final response = await _supabase
-        .from('users')
-        .select()
-        .eq('role', 'staff')
-        .order('name', ascending: true);
+  Future<List<StaffData>> fetchStaff(String? shopId) async {
+    var query = _supabase.from('users').select().eq('role', 'staff');
+    if (shopId != null) {
+      query = query.eq('shop_id', int.parse(shopId));
+    }
+    final response = await query.order('name', ascending: true);
     
     return (response as List).map((data) => StaffData.fromJson(data)).toList();
   }
@@ -32,7 +32,7 @@ class StaffService {
       }
 
       // Insert manual ke public.users (trigger mungkin belum berjalan)
-      await _supabase.from('users').upsert({
+      final data = {
         'id': response.user!.id,
         'email': staff.email,
         'name': staff.name,
@@ -40,7 +40,10 @@ class StaffService {
         'img_url': staff.imgUrl,
         'is_active': staff.isActive,
         'role': 'staff',
-      });
+      };
+      if (staff.shopId != null) data['shop_id'] = int.parse(staff.shopId!);
+      
+      await _supabase.from('users').upsert(data);
     } catch (e) {
       throw Exception('Error registrasi: $e');
     }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/app_data.dart';
 import '../services/supabase_service.dart';
+import '../services/order_service.dart';
+import '../services/void_approval_service.dart';
 import 'admin_price_management_page.dart';
 
 class AdminProfilePage extends StatefulWidget {
@@ -39,6 +41,37 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
   void _snack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg, style: TextStyle()), backgroundColor: isError ? Colors.red : const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16)));
+  }
+
+  Future<void> _changeVoidPin() async {
+    final newPinCtrl = TextEditingController();
+    final confirmPinCtrl = TextEditingController();
+    await showDialog(context: context, builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('Ganti PIN Void', style: TextStyle(fontWeight: FontWeight.bold)),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: newPinCtrl, obscureText: true, keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'PIN Baru', border: OutlineInputBorder(), hintText: '4-6 angka')),
+        const SizedBox(height: 12),
+        TextField(controller: confirmPinCtrl, obscureText: true, keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Konfirmasi PIN', border: OutlineInputBorder())),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          onPressed: () async {
+            if (newPinCtrl.text.length < 4) { _snack('PIN minimal 4 digit!', isError: true); return; }
+            if (newPinCtrl.text != confirmPinCtrl.text) { _snack('Konfirmasi PIN tidak cocok!', isError: true); return; }
+            await VoidApprovalService.setPin(newPinCtrl.text);
+            if (ctx.mounted) Navigator.pop(ctx);
+            _snack('PIN Void berhasil diubah!');
+          },
+          child: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ));
   }
 
   Future<void> _logout() async {
@@ -136,7 +169,13 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminPriceManagementPage(
               prices: widget.appState.prices,
-              onPriceUpdated: () {},
+              onPriceUpdated: () async {
+                // Reload prices after update
+                final prices = await OrderService().fetchPrices(widget.appState.currentShop.id);
+                if (context.mounted) {
+                  setState(() => widget.appState.prices = prices);
+                }
+              },
             ))),
             child: Container(
               padding: const EdgeInsets.all(20),
@@ -148,6 +187,28 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Manajemen Harga', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   Text('Atur harga per layanan laundry', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                ])),
+                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.black26),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Change Void PIN
+          GestureDetector(
+            onTap: _changeVoidPin,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 12, offset: const Offset(0, 4))]),
+              child: Row(children: [
+                Container(padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: const Color(0xFFD32F2F).withAlpha(15), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.pin_rounded, color: Color(0xFFD32F2F), size: 22)),
+                const SizedBox(width: 14),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Ganti PIN Void', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text('PIN digunakan untuk konfirmasi void pesanan', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                 ])),
                 const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.black26),
               ]),

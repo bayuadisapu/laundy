@@ -44,15 +44,22 @@ class PrinterService {
     await prefs.setInt('printer_size', size);
   }
 
+  String? lastError;
+
   Future<bool> connect() async {
-    if (_selectedDevice == null) return false;
+    if (_selectedDevice == null) {
+      lastError = 'Tidak ada printer yang dipilih di pengaturan aplikasi';
+      return false;
+    }
     bool? isConnected = await bluetooth.isConnected;
     if (isConnected == true) return true;
     
     try {
       await bluetooth.connect(_selectedDevice!);
+      await Future.delayed(const Duration(milliseconds: 500));
       return true;
     } catch (e) {
+      lastError = 'Gagal koneksi: $e';
       return false;
     }
   }
@@ -61,7 +68,7 @@ class PrinterService {
     await bluetooth.disconnect();
   }
 
-  Future<bool> printReceipt(OrderData order) async {
+  Future<bool> printReceipt(OrderData order, ShopData settings) async {
     if (!await connect()) return false;
 
     try {
@@ -69,7 +76,9 @@ class PrinterService {
       final generator = Generator(_paperSize, profile);
       List<int> bytes = [];
 
-      bytes += generator.text('LAUNDRYKU', styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
+      bytes += generator.text(settings.name, styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
+      if (settings.address.isNotEmpty) bytes += generator.text(settings.address, styles: const PosStyles(align: PosAlign.center));
+      if (settings.phone.isNotEmpty) bytes += generator.text('WA: ${settings.phone}', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.text('Sistem Manajemen Laundry', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.text('--------------------------------', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.emptyLines(1);
@@ -139,7 +148,7 @@ class PrinterService {
       bytes += generator.text(order.id, styles: const PosStyles(align: PosAlign.center));
       
       bytes += generator.emptyLines(1);
-      bytes += generator.text('Terima Kasih!', styles: const PosStyles(align: PosAlign.center, bold: true));
+      bytes += generator.text(settings.receiptFooter, styles: const PosStyles(align: PosAlign.center, bold: true));
       bytes += generator.text('Harap bawa struk ini saat', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.text('pengambilan pakaian.', styles: const PosStyles(align: PosAlign.center));
       
@@ -149,6 +158,7 @@ class PrinterService {
       await bluetooth.writeBytes(Uint8List.fromList(bytes));
       return true;
     } catch (e) {
+      lastError = 'Gagal print: $e';
       return false;
     }
   }

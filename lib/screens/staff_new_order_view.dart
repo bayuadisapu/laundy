@@ -12,7 +12,7 @@ import 'printer_settings_dialog.dart';
 
 class StaffNewOrderView extends StatefulWidget {
   final AppState appState;
-  final Function(OrderData) onAddOrder;
+  final Future<void> Function(OrderData) onAddOrder;
   final VoidCallback onRefresh;
   const StaffNewOrderView({super.key, required this.appState, required this.onAddOrder, required this.onRefresh});
   @override
@@ -24,9 +24,19 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   final _phoneCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  String _selectedService = 'Biasa';
+  String get _defaultService => widget.appState.prices.isNotEmpty
+      ? widget.appState.prices.first.service
+      : 'Cuci 5kg';
+  late String _selectedService;
   DateTime _estimatedDate = DateTime.now().add(const Duration(days: 3));
   DateTime _orderTime = DateTime.now();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedService = _defaultService;
+  }
 
   @override
   void dispose() {
@@ -55,39 +65,55 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   }
 
   Future<void> _submitOrder() async {
+    if (_isSaving) return;
     if (_customerCtrl.text.trim().isEmpty) {
       _snack('Nama pelanggan wajib diisi!', isError: true); return;
     }
     if (_weightCtrl.text.isEmpty || _weight <= 0) {
       _snack('Berat / jumlah wajib diisi!', isError: true); return;
     }
-    final pic = widget.appState.currentUser;
-    final order = OrderData(
-      id: OrderService.generateOrderId(),
-      customer: _customerCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      service: _selectedService,
-      weight: _weight,
-      pricePerUnit: _currentPrice?.pricePerUnit ?? 0,
-      price: _totalPrice,
-      status: 'Proses',
-      picId: pic?.id,
-      picName: pic?.name ?? 'Staff',
-      notes: _noteCtrl.text.trim(),
-      estimatedDate: DateFormat('yyyy-MM-dd').format(_estimatedDate),
-      orderTime: _orderTime,
-    );
-    widget.onAddOrder(order);
-    await _printReceipt(order);
-    _resetForm();
-    _snack('Pesanan ${order.id} berhasil disimpan!');
+
+    setState(() => _isSaving = true);
+
+    try {
+      final pic = widget.appState.currentUser;
+      final order = OrderData(
+        id: OrderService.generateOrderId(),
+        customer: _customerCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+        service: _selectedService,
+        weight: _weight,
+        pricePerUnit: _currentPrice?.pricePerUnit ?? 0,
+        price: _totalPrice,
+        status: 'Proses',
+        picId: pic?.id,
+        picName: pic?.name ?? 'Staff',
+        notes: _noteCtrl.text.trim(),
+        estimatedDate: DateFormat('yyyy-MM-dd').format(_estimatedDate),
+        orderTime: _orderTime,
+      );
+
+      // 1. Simpan ke database dulu
+      await widget.onAddOrder(order);
+
+      // 2. Baru cetak struk
+      await _printReceipt(order);
+
+      // 3. Reset form & notif sukses
+      _resetForm();
+      if (mounted) _snack('Pesanan ${order.id} berhasil disimpan!');
+    } catch (e) {
+      if (mounted) _snack('Gagal simpan: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   void _resetForm() {
     _customerCtrl.clear(); _phoneCtrl.clear();
     _weightCtrl.clear(); _noteCtrl.clear();
     setState(() {
-      _selectedService = 'Biasa';
+      _selectedService = _defaultService;
       _orderTime = DateTime.now();
       _estimatedDate = DateTime.now().add(const Duration(days: 3));
     });
@@ -104,18 +130,23 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   }
 
   Future<void> _printReceipt(OrderData order) async {
+    final settings = widget.appState.currentShop;
     final ps = PrinterService();
     await ps.init();
     
     if (ps.selectedDevice != null) {
       // Print via Bluetooth Thermal Printer
-      final success = await ps.printReceipt(order);
+      final success = await ps.printReceipt(order, settings);
       if (success) {
         _snack('Struk dicetak ke printer Bluetooth');
         return;
       } else {
-        _snack('Gagal print Bluetooth, mencetak PDF fallback...', isError: true);
+        final errMsg = ps.lastError ?? 'Error tidak diketahui';
+        _snack('Gagal print: $errMsg', isError: true);
+        // still fallback to PDF
       }
+    } else {
+      _snack('Printer belum dipilih, tap ikon printer untuk mengatur', isError: true);
     }
 
     // Fallback: Print PDF
@@ -124,7 +155,9 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
       pdf.addPage(pw.Page(
         pageFormat: PdfPageFormat.roll80,
         build: (ctx) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
-          pw.Text('LAUNDRYKU', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+          pw.Text(settings.name, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+          if (settings.address.isNotEmpty) pw.Text(settings.address, style: const pw.TextStyle(fontSize: 8)),
+          if (settings.phone.isNotEmpty) pw.Text('WA: ${settings.phone}', style: const pw.TextStyle(fontSize: 8)),
           pw.Text(copy == 0 ? 'STRUK PELANGGAN' : 'STRUK RAK', style: const pw.TextStyle(fontSize: 10)),
           pw.Divider(),
           pw.SizedBox(height: 6),
@@ -146,7 +179,7 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
           pw.SizedBox(height: 4),
           pw.Text(order.id, style: const pw.TextStyle(fontSize: 10)),
           pw.SizedBox(height: 8),
-          pw.Text('Terima kasih!', style: const pw.TextStyle(fontSize: 11)),
+          pw.Text(settings.receiptFooter, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
         ]),
       ));
     }
@@ -249,29 +282,18 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
               _card(children: [
                 _label('JENIS LAYANAN *'),
                 const SizedBox(height: 8),
-                Wrap(spacing: 8, runSpacing: 8, children: widget.appState.prices.map((p) {
-                  final sel = _selectedService == p.service;
-                  return GestureDetector(
-                    onTap: () => _onServiceChanged(p.service),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: sel ? const Color(0xFF1E88E5) : Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: sel ? const Color(0xFF1E88E5) : Colors.grey.shade200),
-                      ),
-                      child: Column(children: [
-                        Text(p.service, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: sel ? Colors.white : Colors.grey.shade700)),
-                        Text(_fmt(p.pricePerUnit) + '/${p.unit}', style: TextStyle(fontSize: 10, color: sel ? Colors.white70 : Colors.grey.shade500)),
-                      ]),
-                    ),
-                  );
-                }).toList()),
+                _buildServiceDropdown(),
               ]),
               const SizedBox(height: 16),
               _card(children: [
                 _label('BERAT / JUMLAH ($unit) *'),
-                _textField(_weightCtrl, Icons.scale_outlined, 'Contoh: 3.5', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
+                _textField(
+                  _weightCtrl,
+                  Icons.scale_outlined,
+                  unit == 'kg' ? 'Contoh: 3.5 kg' : unit == 'pcs' ? 'Jumlah pcs/item' : 'Jumlah $unit',
+                  type: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (_) => setState(() {}),
+                ),
                 const SizedBox(height: 16),
                 _label('ESTIMASI SELESAI'),
                 GestureDetector(
@@ -304,9 +326,11 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
               SizedBox(
                 width: double.infinity, height: 60,
                 child: ElevatedButton.icon(
-                  onPressed: _submitOrder,
-                  icon: const Icon(Icons.print_rounded),
-                  label: Text('Simpan & Cetak Struk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  onPressed: _isSaving ? null : _submitOrder,
+                  icon: _isSaving
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.print_rounded),
+                  label: Text(_isSaving ? 'Menyimpan...' : 'Simpan & Cetak Struk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
                 ),
               ),
@@ -315,6 +339,56 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
         ),
       )),
     ]);
+  }
+
+  // Map layanan ke kategori
+  static const _serviceCategories = <String, List<String>>{
+    '🧺 Cuci Kiloan': ['Cuci 5kg','Cuci-Kering 5kg','Cuci-Kering-Lipat 5kg','Cuci 8kg','Cuci-Kering 8kg','Cuci-Kering-Lipat 8kg'],
+    '👕 Cuci-Setrika': ['Cuci-Setrika 24jam','Cuci-Setrika Express 6-8jam','Cuci-Setrika Kilat 3jam','Setrika Saja','Setrika Saja Express'],
+    '🛏 Selimut': ['Selimut Kecil','Selimut Besar','Selimut Tebal','Selimut Jumbo','Selimut Extra Jumbo'],
+    '🛏 Bed Cover': ['Bed Cover 4kaki','Bed Cover 5kaki','Bed Cover 6kaki','Bed Cover 6kaki Berenda'],
+    '🪟 Horden': ['Horden'],
+    '👔 Pakaian Khusus': ['Kemeja/Batik','Jaket Khusus','Celana/Rok','Jas','Jas+Celana','Jas+Celana+Rompi','Selendang/Kemban','Songket','Kebaya Pendek','Kebaya Panjang','Jubah Tebal','Jubah Tipis','Treatment Baju Luntur','Gaun Anak','Gaun Pendek','Gaun Panjang'],
+    '🧸 Boneka & Bantal': ['Boneka Kecil','Boneka Sedang','Boneka Besar','Boneka Jumbo','Bantal'],
+    '⚡ Add On': ['Add On: Express'],
+  };
+
+  Widget _buildServiceDropdown() {
+    final priceMap = { for (var p in widget.appState.prices) p.service: p };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _serviceCategories.entries.map((cat) {
+        final services = cat.value.where((s) => priceMap.containsKey(s)).toList();
+        if (services.isEmpty) return const SizedBox.shrink();
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 6),
+            child: Text(cat.key, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 0.5)),
+          ),
+          Wrap(spacing: 8, runSpacing: 8, children: services.map((svc) {
+            final p = priceMap[svc]!;
+            final sel = _selectedService == svc;
+            return GestureDetector(
+              onTap: () => _onServiceChanged(svc),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: sel ? const Color(0xFF1565C0) : const Color(0xFFF1F4F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: sel ? const Color(0xFF1565C0) : Colors.grey.shade200, width: 1.5),
+                  boxShadow: sel ? [BoxShadow(color: const Color(0xFF1565C0).withAlpha(60), blurRadius: 8, offset: const Offset(0,3))] : [],
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p.service, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: sel ? Colors.white : const Color(0xFF1A1C1E))),
+                  Text('${_fmt(p.pricePerUnit)}/${p.unit}', style: TextStyle(fontSize: 10, color: sel ? Colors.white70 : Colors.grey.shade500)),
+                ]),
+              ),
+            );
+          }).toList()),
+        ]);
+      }).toList(),
+    );
   }
 
   Widget _card({required List<Widget> children}) => Container(

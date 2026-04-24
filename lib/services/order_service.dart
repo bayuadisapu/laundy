@@ -4,11 +4,12 @@ import 'supabase_service.dart';
 class OrderService {
   final _supabase = SupabaseService.client;
 
-  Future<List<OrderData>> fetchOrders() async {
-    final response = await _supabase
-        .from('orders')
-        .select()
-        .order('order_time', ascending: false);
+  Future<List<OrderData>> fetchOrders(String? shopId) async {
+    var query = _supabase.from('orders').select();
+    if (shopId != null) {
+      query = query.eq('shop_id', int.parse(shopId));
+    }
+    final response = await query.order('order_time', ascending: false);
     return (response as List).map((d) => OrderData.fromJson(d)).toList();
   }
 
@@ -43,22 +44,29 @@ class OrderService {
     await _supabase.from('orders').delete().eq('id', id);
   }
 
-  Future<List<PriceConfig>> fetchPrices() async {
+  Future<List<PriceConfig>> fetchPrices(String? shopId) async {
     try {
-      final response = await _supabase.from('price_config').select().order('service');
+      var query = _supabase.from('price_config').select();
+      if (shopId != null) {
+        query = query.eq('shop_id', int.parse(shopId));
+      }
+      final response = await query.order('service');
       return (response as List).map((d) => PriceConfig.fromJson(d)).toList();
     } catch (_) {
       return PriceConfig.defaultPrices();
     }
   }
 
-  Future<void> upsertPrice(String service, int pricePerUnit, {String unit = 'kg', int defaultDays = 2}) async {
-    await _supabase.from('price_config').upsert({
+  Future<void> upsertPrice(String service, int pricePerUnit, {String unit = 'kg', int defaultDays = 2, String? shopId}) async {
+    final data = {
       'service': service,
       'price_per_unit': pricePerUnit,
       'unit': unit,
       'default_days': defaultDays,
-    }, onConflict: 'service');
+    };
+    if (shopId != null) data['shop_id'] = int.parse(shopId);
+    
+    await _supabase.from('price_config').upsert(data, onConflict: 'shop_id,service');
   }
 
   static String generateOrderId() {

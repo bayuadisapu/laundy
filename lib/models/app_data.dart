@@ -1,26 +1,81 @@
 import 'package:intl/intl.dart';
 
 class PriceConfig {
+  final int? id;
   final String service;
   final int pricePerUnit;
   final String unit;
   final int defaultDays;
+  final String? shopId;
 
-  PriceConfig({required this.service, required this.pricePerUnit, required this.unit, required this.defaultDays});
+  PriceConfig({this.id, required this.service, required this.pricePerUnit, required this.unit, required this.defaultDays, this.shopId});
 
   factory PriceConfig.fromJson(Map<String, dynamic> json) => PriceConfig(
+    id: json['id'],
     service: json['service'] ?? '',
     pricePerUnit: json['price_per_unit'] ?? 0,
     unit: json['unit'] ?? 'kg',
     defaultDays: json['default_days'] ?? 2,
+    shopId: json['shop_id']?.toString(),
   );
 
+  Map<String, dynamic> toJson() => {
+    'service': service, 'price_per_unit': pricePerUnit, 'unit': unit, 
+    'default_days': defaultDays, 'shop_id': shopId != null ? int.tryParse(shopId!) : null,
+  };
+
   static List<PriceConfig> defaultPrices() => [
-    PriceConfig(service: 'Biasa',   pricePerUnit: 7000,  unit: 'kg',  defaultDays: 3),
-    PriceConfig(service: 'Express', pricePerUnit: 15000, unit: 'kg',  defaultDays: 1),
-    PriceConfig(service: 'Lipat',   pricePerUnit: 3000,  unit: 'kg',  defaultDays: 2),
-    PriceConfig(service: 'Setrika', pricePerUnit: 3000,  unit: 'kg',  defaultDays: 2),
-    PriceConfig(service: 'Satuan',  pricePerUnit: 5000,  unit: 'pcs', defaultDays: 2),
+    // Cuci Kiloan (Paket)
+    PriceConfig(service: 'Cuci 5kg',               pricePerUnit: 10000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Cuci-Kering 5kg',        pricePerUnit: 20000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Cuci-Kering-Lipat 5kg',  pricePerUnit: 25000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Cuci 8kg',               pricePerUnit: 15000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Cuci-Kering 8kg',        pricePerUnit: 30000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Cuci-Kering-Lipat 8kg',  pricePerUnit: 35000, unit: 'pcs', defaultDays: 2),
+    // Cuci-Setrika (per kg)
+    PriceConfig(service: 'Cuci-Setrika 24jam',          pricePerUnit: 9000,  unit: 'kg', defaultDays: 1),
+    PriceConfig(service: 'Cuci-Setrika Express 6-8jam', pricePerUnit: 12000, unit: 'kg', defaultDays: 1),
+    PriceConfig(service: 'Cuci-Setrika Kilat 3jam',     pricePerUnit: 16000, unit: 'kg', defaultDays: 1),
+    PriceConfig(service: 'Setrika Saja',                pricePerUnit: 5000,  unit: 'kg', defaultDays: 1),
+    PriceConfig(service: 'Setrika Saja Express',        pricePerUnit: 7000,  unit: 'kg', defaultDays: 1),
+    // Selimut
+    PriceConfig(service: 'Selimut Kecil',       pricePerUnit: 10000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Selimut Besar',       pricePerUnit: 15000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Selimut Tebal',       pricePerUnit: 20000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Selimut Jumbo',       pricePerUnit: 30000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Selimut Extra Jumbo', pricePerUnit: 35000, unit: 'pcs', defaultDays: 3),
+    // Bed Cover
+    PriceConfig(service: 'Bed Cover 4kaki',         pricePerUnit: 20000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Bed Cover 5kaki',         pricePerUnit: 25000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Bed Cover 6kaki',         pricePerUnit: 30000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Bed Cover 6kaki Berenda', pricePerUnit: 35000, unit: 'pcs', defaultDays: 4),
+    // Horden
+    PriceConfig(service: 'Horden', pricePerUnit: 12000, unit: 'kg', defaultDays: 3),
+    // Pakaian Khusus
+    PriceConfig(service: 'Kemeja/Batik',          pricePerUnit: 15000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Jaket Khusus',          pricePerUnit: 20000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Celana/Rok',            pricePerUnit: 15000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Jas',                   pricePerUnit: 20000, unit: 'pcs', defaultDays: 4),
+    PriceConfig(service: 'Jas+Celana',            pricePerUnit: 30000, unit: 'set', defaultDays: 4),
+    PriceConfig(service: 'Jas+Celana+Rompi',      pricePerUnit: 35000, unit: 'set', defaultDays: 4),
+    PriceConfig(service: 'Selendang/Kemban',      pricePerUnit: 10000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Songket',               pricePerUnit: 25000, unit: 'pcs', defaultDays: 4),
+    PriceConfig(service: 'Kebaya Pendek',         pricePerUnit: 15000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Kebaya Panjang',        pricePerUnit: 20000, unit: 'pcs', defaultDays: 4),
+    PriceConfig(service: 'Jubah Tebal',           pricePerUnit: 30000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Jubah Tipis',           pricePerUnit: 20000, unit: 'pcs', defaultDays: 2),
+    PriceConfig(service: 'Treatment Baju Luntur', pricePerUnit: 35000, unit: 'pcs', defaultDays: 5),
+    PriceConfig(service: 'Gaun Anak',             pricePerUnit: 15000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Gaun Pendek',           pricePerUnit: 20000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Gaun Panjang',          pricePerUnit: 25000, unit: 'pcs', defaultDays: 4),
+    // Boneka & Bantal
+    PriceConfig(service: 'Boneka Kecil',  pricePerUnit: 15000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Boneka Sedang', pricePerUnit: 20000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Boneka Besar',  pricePerUnit: 25000, unit: 'pcs', defaultDays: 3),
+    PriceConfig(service: 'Boneka Jumbo',  pricePerUnit: 30000, unit: 'pcs', defaultDays: 4),
+    PriceConfig(service: 'Bantal',        pricePerUnit: 20000, unit: 'pcs', defaultDays: 2),
+    // Add On
+    PriceConfig(service: 'Add On: Express', pricePerUnit: 10000, unit: 'menu', defaultDays: 0),
   ];
 }
 
@@ -47,6 +102,7 @@ class OrderData {
   DateTime orderTime;
   DateTime? completedTime;
   DateTime? pickedUpTime;
+  final String? shopId;
 
   OrderData({
     required this.id,
@@ -71,6 +127,7 @@ class OrderData {
     DateTime? orderTime,
     this.completedTime,
     this.pickedUpTime,
+    this.shopId,
   }) : orderTime = orderTime ?? DateTime.now();
 
   OrderData copyWith({
@@ -83,6 +140,7 @@ class OrderData {
     String? shiftId,
     String? notes, String? estimatedDate,
     DateTime? orderTime, DateTime? completedTime, DateTime? pickedUpTime,
+    String? shopId,
   }) => OrderData(
     id: id ?? this.id, customer: customer ?? this.customer,
     phone: phone ?? this.phone, service: service ?? this.service,
@@ -97,6 +155,7 @@ class OrderData {
     orderTime: orderTime ?? this.orderTime,
     completedTime: completedTime ?? this.completedTime,
     pickedUpTime: pickedUpTime ?? this.pickedUpTime,
+    shopId: shopId ?? this.shopId,
   );
 
   factory OrderData.fromJson(Map<String, dynamic> json) => OrderData(
@@ -122,6 +181,7 @@ class OrderData {
     orderTime: json['order_time'] != null ? DateTime.parse(json['order_time']).toLocal() : DateTime.now(),
     completedTime: json['completed_time'] != null ? DateTime.parse(json['completed_time']).toLocal() : null,
     pickedUpTime: json['picked_up_time'] != null ? DateTime.parse(json['picked_up_time']).toLocal() : null,
+    shopId: json['shop_id']?.toString(),
   );
 
   Map<String, dynamic> toMap() => {
@@ -139,9 +199,10 @@ class OrderData {
     'order_time': orderTime.toUtc().toIso8601String(),
     'completed_time': completedTime?.toUtc().toIso8601String(),
     'picked_up_time': pickedUpTime?.toUtc().toIso8601String(),
+    'shop_id': shopId != null ? int.tryParse(shopId!) : null,
   };
 
-  String get formattedDate => DateFormat('dd/MM/yyyy HH:mm').format(orderTime);
+  String get formattedDate => DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(orderTime);
   String get formattedPrice => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(price);
 }
 
@@ -153,6 +214,7 @@ class StaffData {
   String imgUrl;
   String phone;
   bool isActive;
+  final String? shopId;
 
   StaffData({
     this.id = '',
@@ -162,6 +224,7 @@ class StaffData {
     this.imgUrl = '',
     this.phone = '',
     this.isActive = true,
+    this.shopId,
   });
 
   factory StaffData.fromJson(Map<String, dynamic> json) => StaffData(
@@ -172,22 +235,78 @@ class StaffData {
     imgUrl: json['img_url'] ?? 'https://i.pravatar.cc/150?u=default',
     phone: json['phone'] ?? '',
     isActive: json['is_active'] ?? true,
+    shopId: json['shop_id']?.toString(),
   );
 
   Map<String, dynamic> toMap() => {
     'name': name, 'email': email, 'username': username,
     'img_url': imgUrl, 'phone': phone, 'is_active': isActive,
+    'shop_id': shopId != null ? int.tryParse(shopId!) : null,
   };
 }
+
+class ShopData {
+  final String id;
+  final String name;
+  final String address;
+  final String phone;
+  final String logoUrl;
+  final String receiptFooter;
+
+  ShopData({
+    required this.id,
+    required this.name,
+    this.address = '',
+    this.phone = '',
+    this.logoUrl = '',
+    this.receiptFooter = 'Terima kasih!',
+  });
+
+  factory ShopData.fromJson(Map<String, dynamic> json) => ShopData(
+    id: json['id']?.toString() ?? '1',
+    name: json['name'] ?? 'LaundryKu',
+    address: json['address'] ?? '',
+    phone: json['phone'] ?? '',
+    logoUrl: json['logo_url'] ?? '',
+    receiptFooter: json['receipt_footer'] ?? 'Terima kasih!',
+  );
+
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'address': address,
+    'phone': phone,
+    'logo_url': logoUrl,
+    'receipt_footer': receiptFooter,
+  };
+
+  factory ShopData.defaultShop() => ShopData(
+    id: '1',
+    name: 'LaundryKu',
+    address: 'Jl. Contoh No. 123',
+    phone: '08123456789',
+    receiptFooter: 'Terima kasih telah menggunakan jasa kami!',
+  );
+}
+
 
 class AppState {
   final List<OrderData> orders;
   final List<StaffData> staffList;
   List<PriceConfig> prices;
   StaffData? currentUser;
+  ShopData currentShop;
+  List<ShopData> allShops;
 
-  AppState({required this.orders, required this.staffList, List<PriceConfig>? prices, this.currentUser})
-      : prices = prices ?? PriceConfig.defaultPrices();
+  AppState({
+    required this.orders, 
+    required this.staffList, 
+    List<PriceConfig>? prices, 
+    this.currentUser, 
+    ShopData? shop,
+    List<ShopData>? allShops,
+  }) : prices = prices ?? PriceConfig.defaultPrices(),
+       currentShop = shop ?? ShopData.defaultShop(),
+       allShops = allShops ?? [ShopData.defaultShop()];
 
   List<OrderData> get activeOrders => orders.where((o) => o.status == 'Proses').toList();
   List<OrderData> get completedOrders => orders.where((o) => o.status == 'Selesai').toList();
@@ -206,12 +325,13 @@ class AppState {
   }
 
   int incomeForPeriod(DateTime start, DateTime end) =>
-      orders.where((o) => o.status == 'Sudah Diambil' && o.pickedUpTime != null &&
+      orders.where((o) => o.status == 'Sudah Diambil' && o.pickedUpTime != null && 
           !o.pickedUpTime!.isBefore(start) && o.pickedUpTime!.isBefore(end))
           .fold(0, (s, o) => s + o.price);
 
   int ordersForPeriod(DateTime start, DateTime end) =>
-      orders.where((o) => !o.orderTime.isBefore(start) && o.orderTime.isBefore(end)).length;
+      orders.where((o) => o.status == 'Sudah Diambil' && o.pickedUpTime != null &&
+          !o.pickedUpTime!.isBefore(start) && o.pickedUpTime!.isBefore(end)).length;
 
   PriceConfig? getPriceConfig(String service) {
     try { return prices.firstWhere((p) => p.service == service); }
@@ -287,7 +407,8 @@ class AuditLog {
 
   factory AuditLog.fromJson(Map<String, dynamic> json) => AuditLog(
     id: json['id'],
-    action: AuditActionType.values.firstWhere((e) => e.name == json['action']),
+    action: AuditActionType.values.firstWhere((e) => e.name == json['action'],
+        orElse: () => AuditActionType.manual_status_change),
     orderId: json['order_id'],
     staffId: json['staff_id'],
     oldData: json['old_data'],

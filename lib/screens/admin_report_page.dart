@@ -65,19 +65,22 @@ class _AdminReportPageState extends State<AdminReportPage> {
   // Filter orders by selected range
   List<OrderData> get _filteredTransactions {
     final now = DateTime.now();
+    // Filter only picked up orders for financial report
     return _state.orders.where((o) {
+      if (o.status != 'Sudah Diambil' || o.pickedUpTime == null) return false;
+      
       if (_selectedRange == 'Semua') return true;
-      final orderDate = o.orderTime;
+      final date = o.pickedUpTime!;
       switch (_selectedRange) {
         case 'Hari Ini':
-          return orderDate.year == now.year && orderDate.month == now.month && orderDate.day == now.day;
+          return date.year == now.year && date.month == now.month && date.day == now.day;
         case 'Minggu Ini':
           final weekStart = now.subtract(Duration(days: now.weekday - 1));
-          return !orderDate.isBefore(DateTime(weekStart.year, weekStart.month, weekStart.day));
+          return !date.isBefore(DateTime(weekStart.year, weekStart.month, weekStart.day));
         case 'Bulan Ini':
-          return orderDate.month == now.month && orderDate.year == now.year;
+          return date.month == now.month && date.year == now.year;
         case 'Bulan Spesifik':
-          return orderDate.year == _selectedYear && orderDate.month == _selectedMonth;
+          return date.year == _selectedYear && date.month == _selectedMonth;
         default:
           return true;
       }

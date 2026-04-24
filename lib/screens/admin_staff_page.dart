@@ -1,12 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../models/app_data.dart';
 
 class AdminStaffPage extends StatefulWidget {
   final AppState appState;
-  final Function(StaffData, String) onAddStaff;
-  final Function(StaffData) onDeleteStaff;
-  final Function(StaffData, StaffData) onUpdateStaff;
+  final Future<void> Function(StaffData, String) onAddStaff;
+  final Future<void> Function(StaffData) onDeleteStaff;
+  final Future<void> Function(StaffData, StaffData) onUpdateStaff;
   const AdminStaffPage({super.key, required this.appState, required this.onAddStaff, required this.onDeleteStaff, required this.onUpdateStaff});
   @override
   State<AdminStaffPage> createState() => _AdminStaffPageState();
@@ -19,6 +19,8 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
     final phoneCtrl = TextEditingController();
     final passCtrl = TextEditingController();
     bool obscure = true;
+
+    String selectedShopId = widget.appState.currentShop.id;
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
@@ -34,6 +36,21 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
               GestureDetector(onTap: () => Navigator.pop(ctx), child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle), child: const Icon(Icons.close_rounded, size: 20, color: Colors.grey))),
             ]),
             const SizedBox(height: 24),
+            _formLabel('PENEMPATAN CABANG'),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(14)),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: selectedShopId,
+                  isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF0D47A1)),
+                  items: widget.appState.allShops.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)))).toList(),
+                  onChanged: (v) => setModal(() => selectedShopId = v!),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             _formLabel('NAMA LENGKAP'), _formField(nameCtrl, Icons.person_outline, 'Nama staff'),
             const SizedBox(height: 16),
             _formLabel('EMAIL'), _formField(emailCtrl, Icons.email_outlined, 'email@contoh.com', type: TextInputType.emailAddress),
@@ -50,15 +67,22 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
             ),
             const SizedBox(height: 32),
             SizedBox(width: double.infinity, height: 56, child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty || passCtrl.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nama, email, dan password wajib diisi!', style: TextStyle()), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
                   return;
                 }
-                final staff = StaffData(name: nameCtrl.text, email: emailCtrl.text, username: emailCtrl.text, phone: phoneCtrl.text, imgUrl: 'https://i.pravatar.cc/150?u=${emailCtrl.text}');
-                widget.onAddStaff(staff, passCtrl.text);
+                final staff = StaffData(
+                  name: nameCtrl.text, 
+                  email: emailCtrl.text, 
+                  username: emailCtrl.text, 
+                  phone: phoneCtrl.text, 
+                  imgUrl: 'https://i.pravatar.cc/150?u=${emailCtrl.text}',
+                  shopId: selectedShopId,
+                );
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Staff ${nameCtrl.text} berhasil ditambahkan!', style: TextStyle()), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16)));
+                await widget.onAddStaff(staff, passCtrl.text);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Staff ${nameCtrl.text} berhasil ditambahkan!', style: TextStyle()), backgroundColor: const Color(0xFF2E7D32), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16)));
               },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
               child: Text('Tambah Staff', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -126,6 +150,15 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(s.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     Text(s.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                    if (s.shopId != null) ...[
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        const Icon(Icons.storefront_rounded, size: 12, color: Color(0xFF0D47A1)),
+                        const SizedBox(width: 4),
+                        Text(widget.appState.allShops.firstWhere((sh) => sh.id == s.shopId, orElse: () => ShopData.defaultShop()).name, 
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
+                      ]),
+                    ],
                     if (s.phone.isNotEmpty) Text(s.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
                   ])),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
