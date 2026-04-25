@@ -129,15 +129,28 @@ class PrinterService {
 
       // ===== LAYANAN =====
       bytes += generator.emptyLines(1);
-      final unit = order.service.toLowerCase() == 'satuan' ? 'pcs' : 'Kg';
-      bytes += generator.text(
-        order.service.toUpperCase(),
-        styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1),
-      );
-      bytes += generator.row([
-        PosColumn(text: '  @${order.weight} $unit', width: 7),
-        PosColumn(text: fmt.format(order.price), width: 5, styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      
+      if (order.items.isNotEmpty) {
+        bytes += generator.text('LAYANAN:', styles: const PosStyles(bold: true));
+        bytes += generator.emptyLines(1);
+        for (final item in order.items) {
+          bytes += generator.text(item.service.toUpperCase(), styles: const PosStyles(bold: true));
+          bytes += generator.row([
+            PosColumn(text: '  ${item.displayQty}', width: 7),
+            PosColumn(text: fmt.format(item.subtotal), width: 5, styles: const PosStyles(align: PosAlign.right)),
+          ]);
+        }
+      } else {
+        final unit = order.service.toLowerCase() == 'satuan' ? 'pcs' : 'Kg';
+        bytes += generator.text(
+          order.service.toUpperCase(),
+          styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1),
+        );
+        bytes += generator.row([
+          PosColumn(text: '  @${order.weight} $unit', width: 7),
+          PosColumn(text: fmt.format(order.price), width: 5, styles: const PosStyles(align: PosAlign.right)),
+        ]);
+      }
       bytes += generator.emptyLines(1);
       bytes += generator.text(sepLight, styles: const PosStyles(align: PosAlign.center));
 
@@ -163,7 +176,8 @@ class PrinterService {
       // ===== BARCODE =====
       bytes += generator.emptyLines(1);
       bytes += generator.text('- SCAN ME -', styles: const PosStyles(align: PosAlign.center, bold: true));
-      final List<int> barData = order.id.codeUnits;
+      // Code 128 requires a subset prefix. '{B' is for Subset B (Alphanumeric)
+      final List<int> barData = [123, 66, ...order.id.codeUnits]; 
       bytes += generator.barcode(Barcode.code128(barData), height: 60);
       bytes += generator.text(order.id, styles: const PosStyles(align: PosAlign.center));
       bytes += generator.emptyLines(1);

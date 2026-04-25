@@ -51,46 +51,29 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   }
 
   // ── Tambah / edit item ──────────────────────────────────────────────────
-  void _showAddItemSheet({int? editIndex}) {
-    String? selectedSvc = editIndex != null ? _items[editIndex].service : null;
-    final qtyCtrl = TextEditingController(
-      text: editIndex != null ? (_items[editIndex].qty % 1 == 0
-          ? _items[editIndex].qty.toInt().toString()
-          : _items[editIndex].qty.toString()) : '',
-    );
+  void _showAddItemSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setModal) {
         final priceMap = {for (var p in widget.appState.prices) p.service: p};
-        final cfg = selectedSvc != null ? priceMap[selectedSvc] : null;
-        final unit = cfg?.unit ?? 'kg';
-        final isKg = unit == 'kg';
-        final qty = isKg
-            ? (double.tryParse(qtyCtrl.text) ?? 0)
-            : (double.tryParse(qtyCtrl.text)?.roundToDouble() ?? 0);
-        final subtotal = cfg != null ? (cfg.pricePerUnit * qty).round() : 0;
 
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
+            height: MediaQuery.of(ctx).size.height * 0.75,
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2)))),
-              Text(editIndex != null ? 'Edit Layanan' : 'Tambah Layanan',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const Text('Katalog Layanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 16),
-              // ─ Pilih Layanan ─
-              const Text('PILIH LAYANAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 300,
+              Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,22 +88,39 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
                         ),
                         Wrap(spacing: 8, runSpacing: 8, children: svcs.map((svc) {
                           final p = priceMap[svc]!;
-                          final sel = selectedSvc == svc;
+                          final isSelected = _items.any((e) => e.service == svc);
                           return GestureDetector(
-                            onTap: () => setModal(() => selectedSvc = svc),
+                            onTap: () {
+                              setModal(() {
+                                setState(() {
+                                  if (isSelected) {
+                                    _items.removeWhere((e) => e.service == svc);
+                                  } else {
+                                    _items.add(OrderItem(
+                                      service: p.service,
+                                      qty: p.unit == 'kg' ? 1.0 : 1.0,
+                                      unit: p.unit,
+                                      pricePerUnit: p.pricePerUnit,
+                                      subtotal: p.pricePerUnit,
+                                    ));
+                                  }
+                                  _recalcEstimate();
+                                });
+                              });
+                            },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: sel ? const Color(0xFF1565C0) : const Color(0xFFF1F4F9),
+                                color: isSelected ? const Color(0xFF1565C0) : const Color(0xFFF1F4F9),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: sel ? const Color(0xFF1565C0) : Colors.grey.shade200),
+                                border: Border.all(color: isSelected ? const Color(0xFF1565C0) : Colors.grey.shade200),
                               ),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Text(p.service, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                                  color: sel ? Colors.white : const Color(0xFF1A1C1E))),
+                                  color: isSelected ? Colors.white : const Color(0xFF1A1C1E))),
                                 Text('${_fmt(p.pricePerUnit)}/${p.unit}', style: TextStyle(fontSize: 9,
-                                  color: sel ? Colors.white70 : Colors.grey.shade500)),
+                                  color: isSelected ? Colors.white70 : Colors.grey.shade500)),
                               ]),
                             ),
                           );
@@ -131,73 +131,15 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
                 ),
               ),
               const SizedBox(height: 16),
-              // ─ Input qty ─
-              if (cfg != null) ...[
-                Text(isKg ? 'BERAT (kg)' : 'JUMLAH ($unit)',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(14)),
-                  child: TextField(
-                    controller: qtyCtrl,
-                    keyboardType: isKg
-                        ? const TextInputType.numberWithOptions(decimal: true)
-                        : TextInputType.number,
-                    onChanged: (_) => setModal(() {}),
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(isKg ? Icons.scale_outlined : Icons.tag, size: 20, color: Colors.grey.shade400),
-                      hintText: isKg ? 'Contoh: 2.5' : 'Contoh: 3',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Subtotal', style: TextStyle(fontSize: 12, color: Colors.blue.shade700)),
-                    Text(_fmt(subtotal), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.blue.shade800)),
-                  ]),
-                ),
-              ],
-              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity, height: 52,
                 child: ElevatedButton(
-                  onPressed: (selectedSvc == null || qty <= 0) ? null : () {
-                    final newItem = OrderItem(
-                      service: selectedSvc!,
-                      qty: isKg ? qty : qty.roundToDouble(),
-                      unit: cfg!.unit,
-                      pricePerUnit: cfg.pricePerUnit,
-                      subtotal: subtotal,
-                    );
-                    setState(() {
-                      if (editIndex != null) {
-                        _items[editIndex] = newItem;
-                      } else {
-                        // Jika layanan sudah ada, update qty-nya
-                        final existing = _items.indexWhere((e) => e.service == selectedSvc);
-                        if (existing >= 0) {
-                          _items[existing] = newItem;
-                        } else {
-                          _items.add(newItem);
-                        }
-                      }
-                      _recalcEstimate();
-                    });
-                    Navigator.pop(ctx);
-                    qtyCtrl.dispose();
-                  },
+                  onPressed: () => Navigator.pop(ctx),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1565C0), foregroundColor: Colors.white,
                     elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: Text(editIndex != null ? 'Simpan Perubahan' : 'Tambah ke Pesanan',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  child: const Text('Selesai Memilih', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 ),
               ),
             ]),
@@ -514,36 +456,20 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
                   ...(_items.asMap().entries.map((e) {
                     final i = e.key;
                     final item = e.value;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Row(children: [
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(item.service, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${item.displayQty}  ×  ${_fmt(item.pricePerUnit)}/${item.unit}',
-                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                          ),
-                        ])),
-                        Text(_fmt(item.subtotal),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1565C0))),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _showAddItemSheet(editIndex: i),
-                          child: const Icon(Icons.edit_outlined, size: 18, color: Colors.grey),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => setState(() { _items.removeAt(i); _recalcEstimate(); }),
-                          child: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFD32F2F)),
-                        ),
-                      ]),
+                    return _CartItemRow(
+                      item: item,
+                      onQtyChanged: (newQty) {
+                        setState(() {
+                          _items[i] = item.copyWithQty(newQty);
+                          _recalcEstimate();
+                        });
+                      },
+                      onDelete: () {
+                        setState(() {
+                          _items.removeAt(i);
+                          _recalcEstimate();
+                        });
+                      },
                     );
                   })),
               ]),
@@ -710,5 +636,104 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   }
 }
 
+class _CartItemRow extends StatefulWidget {
+  final OrderItem item;
+  final ValueChanged<double> onQtyChanged;
+  final VoidCallback onDelete;
 
+  const _CartItemRow({required this.item, required this.onQtyChanged, required this.onDelete});
 
+  @override
+  State<_CartItemRow> createState() => _CartItemRowState();
+}
+
+class _CartItemRowState extends State<_CartItemRow> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: _formatQty(widget.item.qty));
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.qty != widget.item.qty) {
+      final text = _formatQty(widget.item.qty);
+      if (_ctrl.text != text && double.tryParse(_ctrl.text) != widget.item.qty) {
+        _ctrl.text = text;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String _formatQty(double q) => q % 1 == 0 ? q.toInt().toString() : q.toString();
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(item.service, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+            '${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(item.pricePerUnit)}/${item.unit}',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
+        ])),
+        // Input Qty
+        Container(
+          width: 60,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: TextField(
+            controller: _ctrl,
+            keyboardType: item.unit == 'kg' ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.only(bottom: 16),
+            ),
+            onChanged: (val) {
+              final newQty = double.tryParse(val) ?? 0.0;
+              widget.onQtyChanged(item.unit == 'kg' ? newQty : newQty.roundToDouble());
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 70,
+          child: Text(
+            NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(item.subtotal),
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1565C0))
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: widget.onDelete,
+          child: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFFD32F2F)),
+        ),
+      ]),
+    );
+  }
+}

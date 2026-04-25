@@ -44,8 +44,8 @@ class _HistoryPageState extends State<HistoryPage> {
     var list = widget.appState.orders.toList();
     
     // Search
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
       list = list.where((o) =>
           o.id.toLowerCase().contains(q) ||
           o.customer.toLowerCase().contains(q) ||
@@ -81,6 +81,14 @@ class _HistoryPageState extends State<HistoryPage> {
       onCancelPickup: widget.onCancelPickup,
       onRefresh: widget.onRefresh,
     );
+  }
+
+  void _checkAutoOpen() {
+    final filtered = _filteredOrders;
+    if (filtered.length == 1 && _searchQuery.trim().isNotEmpty) {
+      // Jika hasil pencarian spesifik (misal dari scan barcode) hanya 1 pesanan, langsung buka detailnya
+      _showDetail(filtered.first);
+    }
   }
 
   @override
@@ -144,13 +152,35 @@ class _HistoryPageState extends State<HistoryPage> {
             decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE2E8F0))),
             child: TextField(
               controller: _searchCtrl,
+              onSubmitted: (v) {
+                setState(() => _searchQuery = v);
+                _checkAutoOpen();
+              },
               onChanged: (v) => setState(() => _searchQuery = v),
               style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Cari ID, Nama, atau Layanan...',
                 hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                 prefixIcon: Icon(Icons.search_rounded, size: 20, color: Colors.grey.shade400),
-                suffixIcon: _searchQuery.isNotEmpty ? IconButton(icon: Icon(Icons.clear, size: 18, color: Colors.grey.shade400), onPressed: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); }) : null,
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_searchCtrl.text.isNotEmpty)
+                      IconButton(icon: Icon(Icons.clear, size: 18, color: Colors.grey.shade400), onPressed: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); }),
+                    Container(
+                      margin: const EdgeInsets.only(right: 6, top: 6, bottom: 6),
+                      decoration: BoxDecoration(color: const Color(0xFF4F46E5), borderRadius: BorderRadius.circular(12)),
+                      child: IconButton(
+                        icon: const Icon(Icons.search_rounded, color: Colors.white, size: 20),
+                        onPressed: () {
+                          FocusScope.of(context).unfocus();
+                          setState(() => _searchQuery = _searchCtrl.text);
+                          _checkAutoOpen();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
