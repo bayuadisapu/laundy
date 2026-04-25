@@ -33,10 +33,73 @@ class LaundryKuApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const LoginPage(),
+        '/': (context) => const AuthGate(),
+        '/login': (context) => const LoginPage(),
         '/staff': (context) => StaffShell(appState: globalAppState),
         '/admin': (context) => AdminShell(appState: globalAppState),
       },
+    );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  Future<void> _checkSession() async {
+    // Beri sedikit jeda agar animasi loading terlihat natural (opsional)
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    try {
+      final profile = await Supabase.instance.client.from('users').select().eq('id', session.user.id).single();
+      final role = profile['role'] as String? ?? 'staff';
+      
+      globalAppState.currentUser = StaffData.fromJson(profile);
+      
+      if (mounted) {
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, '/admin');
+        } else {
+          Navigator.pushReplacementNamed(context, '/staff');
+        }
+      }
+    } catch (e) {
+      // Jika error (misal akun dihapus), logout paksa dan ke halaman login
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFF5F7FA),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.local_laundry_service_rounded, size: 64, color: Color(0xFF0D47A1)),
+            SizedBox(height: 24),
+            CircularProgressIndicator(color: Color(0xFF0D47A1)),
+          ],
+        ),
+      ),
     );
   }
 }

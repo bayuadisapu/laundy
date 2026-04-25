@@ -68,82 +68,73 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
     final fmtTotal = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(totalRevenue);
 
     return Column(children: [
-      // Header
+      // Header clean white
       Container(
-        padding: const EdgeInsets.fromLTRB(24, 64, 24, 28),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A1B9A), Color(0xFF8E24AA), Color(0xFFAB47BC)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ),
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
         ),
-        child: Stack(children: [
-          Positioned(right: -10, top: -20, child: Icon(Icons.people_rounded, size: 100, color: Colors.white.withAlpha(15))),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.people_alt_rounded, color: Colors.white, size: 26),
-              ),
-              const SizedBox(width: 16),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Database Pelanggan', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                Text('${customers.length} pelanggan unik', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(200))),
-              ])),
-              PopupMenuButton<String>(
-                onSelected: (v) => setState(() => _sortBy = v),
-                offset: const Offset(0, 44),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                itemBuilder: (_) => _sorts.map((s) => PopupMenuItem(
-                  value: s,
-                  child: Row(children: [
-                    Icon(s == _sortBy ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, size: 16, color: const Color(0xFF6A1B9A)),
-                    const SizedBox(width: 10),
-                    Text(s, style: const TextStyle(fontSize: 13)),
-                  ]),
-                )).toList(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white24)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: const [
-                    Icon(Icons.sort_rounded, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text('Urut', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 16),
-            // Search
+        child: Column(children: [
+          Row(children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _search = v),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  icon: const Icon(Icons.search_rounded, color: Colors.white70, size: 20),
-                  hintText: 'Cari nama atau nomor HP...',
-                  hintStyle: TextStyle(color: Colors.white.withAlpha(150), fontSize: 14),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  suffixIcon: _search.isNotEmpty ? IconButton(onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); }, icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 18)) : null,
-                ),
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.people_alt_rounded, color: Color(0xFF4F46E5), size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Database Pelanggan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+              Text('${customers.length} pelanggan terdaftar', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            ])),
+            PopupMenuButton<String>(
+              onSelected: (v) => setState(() => _sortBy = v),
+              offset: const Offset(0, 44),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              itemBuilder: (_) => _sorts.map((s) => PopupMenuItem(
+                value: s,
+                child: Row(children: [
+                  Icon(s == _sortBy ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, size: 16, color: const Color(0xFF4F46E5)),
+                  const SizedBox(width: 10),
+                  Text(s, style: const TextStyle(fontSize: 13)),
+                ]),
+              )).toList(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: Row(mainAxisSize: MainAxisSize.min, children: const [
+                  Icon(Icons.sort_rounded, color: Color(0xFF64748B), size: 16),
+                  SizedBox(width: 6),
+                  Text('Urut', style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w600)),
+                ]),
               ),
             ),
-            const SizedBox(height: 16),
-            // Summary stats
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white.withAlpha(20), borderRadius: BorderRadius.circular(16)),
-              child: Row(children: [
-                _statChip(Icons.attach_money_rounded, 'Total Revenue', fmtTotal),
-                const SizedBox(width: 12),
-                _statChip(Icons.receipt_long_rounded, 'Total Order', '${widget.appState.orders.length}'),
-              ]),
+          ]),
+          const SizedBox(height: 16),
+          // Search
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE2E8F0))),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _search = v),
+              style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14),
+              decoration: InputDecoration(
+                icon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 20),
+                hintText: 'Cari nama atau nomor HP...',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                suffixIcon: _search.isNotEmpty ? IconButton(onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); }, icon: Icon(Icons.close_rounded, color: Colors.grey.shade400, size: 16)) : null,
+              ),
             ),
+          ),
+          const SizedBox(height: 14),
+          // Summary stats light
+          Row(children: [
+            _statChip(Icons.payments_rounded, 'Total Belanja', fmtTotal),
+            const SizedBox(width: 12),
+            _statChip(Icons.receipt_long_rounded, 'Total Order', '${widget.appState.orders.length}'),
           ]),
         ]),
       ),
@@ -164,11 +155,11 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
   }
 
   Widget _statChip(IconData icon, String label, String value) => Expanded(child: Row(children: [
-    Icon(icon, size: 16, color: Colors.white.withAlpha(200)),
+    Icon(icon, size: 16, color: const Color(0xFF4F46E5)),
     const SizedBox(width: 8),
     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 9, color: Colors.white.withAlpha(180), fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-      Text(value, style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w900), overflow: TextOverflow.ellipsis),
+      Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade500, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+      Text(value, style: const TextStyle(fontSize: 13, color: Color(0xFF1E293B), fontWeight: FontWeight.w900), overflow: TextOverflow.ellipsis),
     ])),
   ]));
 
@@ -190,11 +181,11 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
             Container(
               width: 52, height: 52,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFAB47BC)]),
+                color: const Color(0xFFEEF2FF),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(child: Text(customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white))),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5)))),
             ),
             if (rank <= 3) Positioned(bottom: -4, right: -4,
               child: Text(medal, style: const TextStyle(fontSize: 16))),
@@ -206,13 +197,13 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
               Text(customer.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
             const SizedBox(height: 6),
             Row(children: [
-              _tag(Icons.receipt_long_rounded, '${customer.totalOrders} order', const Color(0xFF6A1B9A)),
+              _tag(Icons.receipt_long_rounded, '${customer.totalOrders} order', const Color(0xFF4F46E5)),
               const SizedBox(width: 8),
-              _tag(Icons.access_time_rounded, DateFormat('dd MMM yy').format(customer.lastOrder), Colors.grey),
+              _tag(Icons.access_time_rounded, DateFormat('dd MMM yy').format(customer.lastOrder), Colors.grey.shade400),
             ]),
           ])),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(customer.formattedTotal, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF6A1B9A))),
+            Text(customer.formattedTotal, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5))),
             const SizedBox(height: 4),
             const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.black26),
           ]),

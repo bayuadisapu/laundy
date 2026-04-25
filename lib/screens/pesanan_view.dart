@@ -139,10 +139,16 @@ class _PesananViewState extends State<PesananView> {
                             tooltip: 'Ubah Status',
                             onSelected: (newStatus) {
                               if (newStatus != o.status) {
-                                final idx = widget.appState.orders.indexWhere((ord) => ord.id == o.id);
-                                if (idx != -1) {
-                                  widget.onUpdateOrder(o.copyWith(status: newStatus));
+                                final now = DateTime.now();
+                                OrderData updated;
+                                if (newStatus == 'Sudah Diambil') {
+                                  updated = o.copyWith(status: newStatus, pickedUpTime: now, paymentStatus: 'Lunas', paymentTime: now);
+                                } else if (newStatus == 'Selesai') {
+                                  updated = o.copyWith(status: newStatus, completedTime: now);
+                                } else {
+                                  updated = o.copyWith(status: newStatus);
                                 }
+                                widget.onUpdateOrder(updated);
                               }
                             },
                             itemBuilder: (context) => ['Belum Bayar', 'Proses', 'Cuci', 'Keringkan', 'Setrika', 'Siap Ambil', 'Selesai']

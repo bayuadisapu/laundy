@@ -30,50 +30,117 @@ class _AdminPriceManagementPageState extends State<AdminPriceManagementPage> {
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Row(children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: const Color(0xFF0D47A1).withAlpha(20), borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.local_laundry_service_rounded, color: Color(0xFF0D47A1), size: 20)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(config.service, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-        ]),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 8),
-          TextField(
-            controller: ctrl,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Harga per ${config.unit}',
-              prefixText: 'Rp ',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2)),
-            ),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        backgroundColor: Colors.white,
+        elevation: 24,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Premium Title
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)]),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: const Color(0xFF0D47A1).withAlpha(50), blurRadius: 10, offset: const Offset(0, 4))],
+                    ),
+                    child: const Icon(Icons.design_services_rounded, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Edit Harga', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 1.2)),
+                        Text(config.service, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              
+              // Input Harga
+              Text('HARGA PER ${config.unit.toUpperCase()}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black54)),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+                child: TextField(
+                  controller: ctrl,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  decoration: const InputDecoration(
+                    prefixIcon: Padding(padding: EdgeInsets.only(left: 16, right: 8, top: 14, bottom: 14), child: Text('Rp', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0D47A1)))),
+                    prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Input Estimasi
+              const Text('ESTIMASI SELESAI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black54)),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+                child: TextField(
+                  controller: dayCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  decoration: const InputDecoration(
+                    suffixIcon: Padding(padding: EdgeInsets.only(right: 16, top: 15, bottom: 15), child: Text('Hari', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey))),
+                    suffixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIcon: Icon(Icons.access_time_filled_rounded, color: Colors.grey, size: 20),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 36),
+              
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Batal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFF0D47A1),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Simpan Perubahan', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: dayCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Estimasi selesai (hari)',
-              suffixText: 'hari',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2)),
-            ),
-          ),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
+        ),
       ),
     );
 

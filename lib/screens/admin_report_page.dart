@@ -171,7 +171,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
       sheet.cell(xl.CellIndex.indexByString('B7')).value = xl.TextCellValue(_fmt(_netProfit));
       sheet.cell(xl.CellIndex.indexByString('A7')).cellStyle = xl.CellStyle(bold: true);
 
-      final headers = ['No', 'Barcode', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status', 'PIC'];
+      final headers = ['No', 'Barcode', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status', 'Status Bayar', 'PIC'];
       for (int i = 0; i < headers.length; i++) {
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 9)).value = xl.TextCellValue(headers[i]);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 9)).cellStyle = hStyle;
@@ -185,7 +185,8 @@ class _AdminReportPageState extends State<AdminReportPage> {
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: r)).value = xl.DoubleCellValue(t.weight);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: r)).value = xl.TextCellValue(_fmt(t.price.toDouble()));
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: r)).value = xl.TextCellValue(t.status);
-        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: r)).value = xl.TextCellValue(t.picName);
+        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: r)).value = xl.TextCellValue(t.paymentStatus);
+        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: r)).value = xl.TextCellValue(t.picName);
       }
 
       final bytes = excel.save();
@@ -325,37 +326,23 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
   Widget _buildHeader(bool isPhone) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, isPhone ? 52 : 60, 24, 20),
-      color: Colors.white,
+      padding: EdgeInsets.fromLTRB(24, isPhone ? 56 : 60, 24, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(children: [
-            const CircleAvatar(radius: 22, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=admin')),
-            const SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('LaundryKu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: const Color(0xFF0D47A1))),
-              Text('ADMIN PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 1.2)),
-            ]),
-          ]),
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey.shade200)),
-            child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF0D47A1), size: 24),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(14)),
+            child: const Icon(Icons.analytics_rounded, color: Color(0xFF4F46E5), size: 24),
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _handleLogout,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE), shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFFFCDD2)),
-              ),
-              child: const Icon(Icons.logout_rounded, color: Color(0xFFD32F2F), size: 22),
-            ),
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Laporan Keuangan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+            Text('Analitik & performa toko', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          ])),
         ],
       ),
     );
@@ -414,37 +401,35 @@ class _AdminReportPageState extends State<AdminReportPage> {
     return Column(
       children: [
         Row(children: [
-          Expanded(child: _pnlCard('Total Pemasukan', _fmt(_totalIncome), Icons.trending_up_rounded, const Color(0xFFE8F5E9), const Color(0xFF2E7D32))),
+          Expanded(child: _pnlCard('Total Pemasukan', _fmt(_totalIncome), Icons.trending_up_rounded, const Color(0xFFE8F5E9), const Color(0xFF10B981))),
           const SizedBox(width: 12),
-          Expanded(child: _pnlCard('Biaya Operasional', _fmt(_operationalCost), Icons.trending_down_rounded, const Color(0xFFFFEBEE), const Color(0xFFD32F2F))),
+          Expanded(child: _pnlCard('Biaya Operasional', _fmt(_operationalCost), Icons.trending_down_rounded, const Color(0xFFFFEBEE), const Color(0xFFEF4444))),
         ]),
         const SizedBox(height: 12),
+        // Laba bersih card — white with indigo border
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)]),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 8))],
+            border: Border.all(color: const Color(0xFF4F46E5).withAlpha(30)),
+            boxShadow: [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(5), blurRadius: 15, offset: const Offset(0, 5))],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Flexible(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('LABA BERSIH', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 1.1)),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(_fmt(_netProfit), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                  ),
-                ]),
-              ),
+              Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('LABA BERSIH', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400, letterSpacing: 1.1)),
+                const SizedBox(height: 4),
+                FittedBox(fit: BoxFit.scaleDown,
+                  child: Text(_fmt(_netProfit), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)))),
+              ])),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(12)),
-                child: Text('${_profitMargin.toStringAsFixed(1)}%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(color: const Color(0xFF4F46E5), borderRadius: BorderRadius.circular(12)),
+                child: Text('${_profitMargin.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ],
           ),

@@ -5,20 +5,50 @@ class OrderService {
   final _supabase = SupabaseService.client;
 
   Future<List<OrderData>> fetchOrders(String? shopId) async {
-    var query = _supabase.from('orders').select();
-    if (shopId != null) {
-      query = query.eq('shop_id', int.parse(shopId));
+    try {
+      var query = _supabase.from('orders').select();
+      if (shopId != null) {
+        query = query.eq('shop_id', int.parse(shopId));
+      }
+      final response = await query.order('order_time', ascending: false);
+      return (response as List).map((d) => OrderData.fromJson(d)).toList();
+    } catch (e) {
+      // Jika kolom baru belum ada di DB, coba query kolom lama saja
+      try {
+        var query = _supabase.from('orders').select(
+          'id,customer,phone,service,weight,price_per_unit,price,status,pic_id,pic_name,pic_wash_id,pic_wash_name,pic_iron_id,pic_iron_name,pic_pack_id,pic_pack_name,shift_id,notes,estimated_date,order_time,completed_time,picked_up_time,shop_id'
+        );
+        if (shopId != null) query = query.eq('shop_id', int.parse(shopId));
+        final response = await query.order('order_time', ascending: false);
+        return (response as List).map((d) => OrderData.fromJson(d)).toList();
+      } catch (_) {
+        return [];
+      }
     }
-    final response = await query.order('order_time', ascending: false);
-    return (response as List).map((d) => OrderData.fromJson(d)).toList();
   }
 
   Future<void> addOrder(OrderData order) async {
-    await _supabase.from('orders').insert(order.toMap());
+    try {
+      await _supabase.from('orders').insert(order.toMap());
+    } catch (e) {
+      // Fallback: jika kolom payment_status/payment_time belum ada di DB, simpan tanpa kolom tsb
+      final map = order.toMap();
+      map.remove('payment_status');
+      map.remove('payment_time');
+      await _supabase.from('orders').insert(map);
+    }
   }
 
   Future<void> updateOrder(OrderData order) async {
-    await _supabase.from('orders').update(order.toMap()).eq('id', order.id);
+    try {
+      await _supabase.from('orders').update(order.toMap()).eq('id', order.id);
+    } catch (e) {
+      // Fallback tanpa kolom payment
+      final map = order.toMap();
+      map.remove('payment_status');
+      map.remove('payment_time');
+      await _supabase.from('orders').update(map).eq('id', order.id);
+    }
   }
 
   Future<void> updateStatus(String id, String newStatus, {String? shiftId}) async {
@@ -29,7 +59,14 @@ class OrderService {
       update['picked_up_time'] = now;
       if (shiftId != null) update['shift_id'] = shiftId;
     }
-    await _supabase.from('orders').update(update).eq('id', id);
+    try {
+      if (newStatus == 'Sudah Diambil') update['payment_status'] = 'Lunas';
+      await _supabase.from('orders').update(update).eq('id', id);
+    } catch (_) {
+      // Fallback tanpa payment_status jika kolom belum ada
+      update.remove('payment_status');
+      await _supabase.from('orders').update(update).eq('id', id);
+    }
   }
 
   Future<void> checkoutOrder(String id, String shiftId) async {

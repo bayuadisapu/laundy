@@ -103,6 +103,8 @@ class OrderData {
   DateTime? completedTime;
   DateTime? pickedUpTime;
   final String? shopId;
+  String paymentStatus;
+  DateTime? paymentTime;
 
   OrderData({
     required this.id,
@@ -128,6 +130,8 @@ class OrderData {
     this.completedTime,
     this.pickedUpTime,
     this.shopId,
+    this.paymentStatus = 'Belum Lunas',
+    this.paymentTime,
   }) : orderTime = orderTime ?? DateTime.now();
 
   OrderData copyWith({
@@ -141,6 +145,7 @@ class OrderData {
     String? notes, String? estimatedDate,
     DateTime? orderTime, DateTime? completedTime, DateTime? pickedUpTime,
     String? shopId,
+    String? paymentStatus, DateTime? paymentTime,
   }) => OrderData(
     id: id ?? this.id, customer: customer ?? this.customer,
     phone: phone ?? this.phone, service: service ?? this.service,
@@ -156,6 +161,8 @@ class OrderData {
     completedTime: completedTime ?? this.completedTime,
     pickedUpTime: pickedUpTime ?? this.pickedUpTime,
     shopId: shopId ?? this.shopId,
+    paymentStatus: paymentStatus ?? this.paymentStatus,
+    paymentTime: paymentTime ?? this.paymentTime,
   );
 
   factory OrderData.fromJson(Map<String, dynamic> json) => OrderData(
@@ -182,6 +189,8 @@ class OrderData {
     completedTime: json['completed_time'] != null ? DateTime.parse(json['completed_time']).toLocal() : null,
     pickedUpTime: json['picked_up_time'] != null ? DateTime.parse(json['picked_up_time']).toLocal() : null,
     shopId: json['shop_id']?.toString(),
+    paymentStatus: json['payment_status'] ?? 'Belum Lunas',
+    paymentTime: json['payment_time'] != null ? DateTime.parse(json['payment_time']).toLocal() : null,
   );
 
   Map<String, dynamic> toMap() => {
@@ -200,6 +209,8 @@ class OrderData {
     'completed_time': completedTime?.toUtc().toIso8601String(),
     'picked_up_time': pickedUpTime?.toUtc().toIso8601String(),
     'shop_id': shopId != null ? int.tryParse(shopId!) : null,
+    'payment_status': paymentStatus,
+    'payment_time': paymentTime?.toUtc().toIso8601String(),
   };
 
   String get formattedDate => DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(orderTime);

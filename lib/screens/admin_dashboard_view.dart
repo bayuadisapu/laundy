@@ -163,76 +163,66 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final user = widget.appState.currentUser;
 
     return Column(children: [
-      // Header
+      // ── Header: clean white ──
       Container(
-        padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 10)),
-          ],
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 12, offset: const Offset(0, 3))],
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -10, top: -20,
-              child: Icon(Icons.dashboard_rounded, size: 100, color: Colors.white.withAlpha(15)),
+        child: Row(children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF4F46E5).withAlpha(80), width: 2),
             ),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundImage: user?.imgUrl != null ? NetworkImage(user!.imgUrl!) : null,
+              backgroundColor: const Color(0xFFEEF2FF),
+              child: user?.imgUrl == null ? const Icon(Icons.person_rounded, color: Color(0xFF4F46E5), size: 22) : null,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Selamat datang 👋', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
             Row(children: [
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white24, width: 2)),
-                child: CircleAvatar(radius: 24, backgroundImage: NetworkImage(user?.imgUrl ?? 'https://i.pravatar.cc/150?u=admin'), backgroundColor: Colors.white24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(
-                  children: [
-                    Flexible(child: Text('${widget.appState.currentShop.name} Admin', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5), overflow: TextOverflow.ellipsis)),
-                    if (widget.appState.allShops.length > 1)
-                      GestureDetector(
-                        onTap: _showShopPicker,
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
-                          child: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 16),
-                        ),
-                      ),
-                  ],
+              Flexible(child: Text(user?.name ?? 'Administrator', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)), overflow: TextOverflow.ellipsis)),
+              if (widget.appState.allShops.length > 1)
+                GestureDetector(
+                  onTap: _showShopPicker,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(20)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(widget.appState.currentShop.name, style: const TextStyle(fontSize: 10, color: Color(0xFF4F46E5), fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 3),
+                      const Icon(Icons.unfold_more_rounded, size: 11, color: Color(0xFF4F46E5)),
+                    ]),
+                  ),
                 ),
-                Text(DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.now()), style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(200))),
-              ])),
-              Container(
-                decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(12)),
-                child: PopupMenuButton<String>(
-                  offset: const Offset(0, 45),
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                  onSelected: (value) {
-                    if (value == 'shift') {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ShiftManagementScreen(staff: widget.appState.currentUser!)));
-                    } else if (value == 'audit') {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AuditLogsScreen()));
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'shift', child: Text('Manajemen Shift')),
-                    const PopupMenuItem(value: 'audit', child: Text('Audit Logs')),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(12)),
-                child: IconButton(onPressed: widget.onRefresh, icon: const Icon(Icons.refresh_rounded, color: Colors.white)),
-              ),
             ]),
-          ],
-        ),
+          ])),
+          _HeaderBtn(icon: Icons.more_vert_rounded, onTap: () {
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+              builder: (_) => Column(mainAxisSize: MainAxisSize.min, children: [
+                const SizedBox(height: 8),
+                Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2))),
+                ListTile(leading: const Icon(Icons.schedule_rounded, color: Color(0xFF4F46E5)), title: const Text('Manajemen Shift'),
+                  onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => ShiftManagementScreen(staff: widget.appState.currentUser!))); }),
+                ListTile(leading: const Icon(Icons.assignment_rounded, color: Color(0xFF4F46E5)), title: const Text('Audit Logs'),
+                  onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AuditLogsScreen())); }),
+                const SizedBox(height: 16),
+              ]),
+            );
+          }),
+          const SizedBox(width: 8),
+          _HeaderBtn(icon: Icons.refresh_rounded, onTap: widget.onRefresh),
+        ]),
       ),
 
       Expanded(child: RefreshIndicator(
@@ -241,90 +231,91 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Period filter
+
+            // Toko & tanggal
+            Text(widget.appState.currentShop.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+            Text(DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(DateTime.now()), style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+            const SizedBox(height: 20),
+
+            // Period filter — pill minimal
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(children: _periods.map((p) {
                 final sel = _period == p;
-                return Padding(padding: const EdgeInsets.only(right: 8), child: GestureDetector(
+                return GestureDetector(
                   onTap: () => setState(() => _period = p),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(color: sel ? const Color(0xFF0D47A1) : Colors.white, borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: sel ? const Color(0xFF0D47A1) : Colors.grey.shade200),
-                      boxShadow: sel ? [BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 8, offset: const Offset(0, 4))] : null),
-                    child: Text(p, style: TextStyle(color: sel ? Colors.white : Colors.grey.shade600, fontWeight: sel ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: sel ? const Color(0xFF4F46E5) : Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: sel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0)),
+                      boxShadow: sel ? [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(40), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                    ),
+                    child: Text(p, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: sel ? Colors.white : const Color(0xFF64748B))),
                   ),
-                ));
+                );
               }).toList()),
             ),
             const SizedBox(height: 20),
 
-            // Stats cards
+            // Stats
             LayoutBuilder(builder: (context, c) {
-              final isWide = c.maxWidth > 600;
-              return Column(
-                children: [
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: isWide ? 2 : 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: isWide ? 2.5 : 1.5,
-                    children: [
-                      _BigStatCard(label: 'TOTAL PENDAPATAN', value: _fmt(totalIncome), icon: Icons.payments_rounded, color: const Color(0xFF0D47A1), light: const Color(0xFFE8EFF8)),
-                      _BigStatCard(label: 'TOTAL PESANAN', value: '$totalOrders', icon: Icons.receipt_long_rounded, color: const Color(0xFF2E7D32), light: const Color(0xFFE8F5E9)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: isWide ? 3 : 3,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: isWide ? 1.8 : 1.1,
-                    children: [
-                      _SmallStatCard(label: 'Diproses', value: '${widget.appState.totalProses}', icon: Icons.sync_rounded, color: const Color(0xFFE65100)),
-                      _SmallStatCard(label: 'Selesai', value: '${widget.appState.totalSelesai}', icon: Icons.done_all_rounded, color: const Color(0xFF1E88E5)),
-                      _SmallStatCard(label: 'Sudah Diambil', value: '${widget.appState.totalSudahDiambil}', icon: Icons.inventory_2_outlined, color: const Color(0xFF7B1FA2)),
-                    ],
-                  ),
-                ],
-              );
+              final wide = c.maxWidth > 600;
+              return Column(children: [
+                Row(children: [
+                  Expanded(child: _StatCardLg(label: 'Pendapatan', value: _fmt(totalIncome), icon: Icons.trending_up_rounded, accent: const Color(0xFF4F46E5))),
+                  const SizedBox(width: 12),
+                  Expanded(child: _StatCardLg(label: 'Pesanan', value: '$totalOrders', icon: Icons.receipt_long_rounded, accent: const Color(0xFF0EA5E9))),
+                ]),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(child: _StatCardSm(label: 'Proses', value: '${widget.appState.totalProses}', color: const Color(0xFFF59E0B))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _StatCardSm(label: 'Selesai', value: '${widget.appState.totalSelesai}', color: const Color(0xFF10B981))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _StatCardSm(label: 'Diambil', value: '${widget.appState.totalSudahDiambil}', color: const Color(0xFF8B5CF6))),
+                ]),
+              ]);
             }),
             const SizedBox(height: 20),
 
-            // Overdue Alert Banner
+            // Overdue & chart
             _buildOverdueBanner(),
-
-            // 30-Day Revenue Trend Chart
             _buildTrendChart(),
             const SizedBox(height: 20),
 
-            // Export button
+            // Export
             SizedBox(width: double.infinity, child: OutlinedButton.icon(
               onPressed: _exportExcel,
-              icon: const Icon(Icons.download_rounded),
-              label: Text('Export Excel - $_period', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF0D47A1), side: const BorderSide(color: Color(0xFF0D47A1)), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: Text('Export Excel — $_period', style: const TextStyle(fontWeight: FontWeight.w600)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF6366F1),
+                side: const BorderSide(color: Color(0xFF6366F1)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
             )),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
-            // Recent orders
+            // Recent orders header
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Pesanan Terbaru', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Pesanan Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
               Text('${widget.appState.orders.length} total', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
             ]),
             const SizedBox(height: 12),
             if (widget.appState.orders.isEmpty)
               Center(child: Padding(padding: const EdgeInsets.all(48), child: Column(children: [
-                Icon(Icons.inbox_rounded, size: 64, color: Colors.grey.shade300), const SizedBox(height: 12),
+                Icon(Icons.inbox_rounded, size: 60, color: Colors.grey.shade300),
+                const SizedBox(height: 12),
                 Text('Belum ada pesanan', style: TextStyle(color: Colors.grey.shade400)),
               ])))
             else
-              ...widget.appState.recentOrders.map((o) => _OrderRow(order: o)).toList(),
+              ...widget.appState.recentOrders.map((o) => _OrderRow(order: o)),
           ]),
         ),
       )),
@@ -502,80 +493,115 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 }
 
-class _BigStatCard extends StatelessWidget {
-  final String label, value;
+// ── Tombol header kecil ──
+class _HeaderBtn extends StatelessWidget {
   final IconData icon;
-  final Color color, light;
-  const _BigStatCard({required this.label, required this.value, required this.icon, required this.color, required this.light});
+  final VoidCallback onTap;
+  const _HeaderBtn({required this.icon, required this.onTap});
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(colors: [color, color.withAlpha(200)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-      borderRadius: BorderRadius.circular(24),
-      boxShadow: [BoxShadow(color: color.withAlpha(60), blurRadius: 15, offset: const Offset(0, 8))],
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Icon(icon, color: const Color(0xFF64748B), size: 20),
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
-        child: Icon(icon, color: Colors.white, size: 20)),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white.withAlpha(180), letterSpacing: 1)),
-        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white))),
-      ]),
-    ]),
   );
 }
 
-class _SmallStatCard extends StatelessWidget {
+// ── Stat card besar ──
+class _StatCardLg extends StatelessWidget {
   final String label, value;
   final IconData icon;
-  final Color color;
-  const _SmallStatCard({required this.label, required this.value, required this.icon, required this.color});
+  final Color accent;
+  const _StatCardLg({required this.label, required this.value, required this.icon, required this.accent});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Colors.grey.withAlpha(20), width: 1),
-      boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 12, offset: const Offset(0, 6))],
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
+      boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))],
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Container(padding: const EdgeInsets.all(7), decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: color, size: 17)),
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E)))),
-        Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 0.5)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey.shade400, letterSpacing: 0.8)),
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(color: accent.withAlpha(20), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: accent, size: 16),
+        ),
       ]),
+      const SizedBox(height: 12),
+      FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+        child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)))),
     ]),
   );
 }
 
+// ── Stat card kecil (status) ──
+class _StatCardSm extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  const _StatCardSm({required this.label, required this.value, required this.color});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFF1F5F9)),
+      boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 4))],
+    ),
+    child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(height: 6),
+      FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+        child: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)))),
+      FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+        child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey.shade500))),
+    ]),
+  );
+}
+
+// ── Order row elegan ──
 class _OrderRow extends StatelessWidget {
   final OrderData order;
   const _OrderRow({required this.order});
-  Color get _statusColor { switch (order.status) { case 'Proses': return const Color(0xFFE65100); case 'Selesai': return const Color(0xFF1E88E5); case 'Sudah Diambil': return const Color(0xFF2E7D32); default: return Colors.grey; }}
+  Color get _c { switch (order.status) { case 'Proses': return const Color(0xFFF59E0B); case 'Selesai': return const Color(0xFF3B82F6); case 'Sudah Diambil': return const Color(0xFF10B981); default: return Colors.grey; }}
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 8, offset: const Offset(0, 3))]),
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFF1F5F9)),
+      boxShadow: [BoxShadow(color: Colors.black.withAlpha(4), blurRadius: 8, offset: const Offset(0, 3))],
+    ),
     child: Row(children: [
-      Container(width: 4, height: 44, decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(4))),
-      const SizedBox(width: 12),
+      Container(width: 3, height: 40, decoration: BoxDecoration(color: _c, borderRadius: BorderRadius.circular(3))),
+      const SizedBox(width: 14),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(order.customer, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        Text('${order.id} • ${order.service} • PIC: ${order.picName}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        Text(order.customer, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A))),
+        const SizedBox(height: 2),
+        Text('${order.id} · ${order.service}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
       ])),
       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: _statusColor.withAlpha(20), borderRadius: BorderRadius.circular(8)),
-          child: Text(order.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _statusColor))),
-        const SizedBox(height: 3),
-        Text(NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(order.price), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: _c.withAlpha(20), borderRadius: BorderRadius.circular(20)),
+          child: Text(order.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _c)),
+        ),
+        const SizedBox(height: 4),
+        Text(NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(order.price),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
       ]),
     ]),
   );
 }
-
-
-

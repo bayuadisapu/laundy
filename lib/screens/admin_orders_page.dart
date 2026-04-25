@@ -1,13 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'package:intl/intl.dart';
 import '../models/app_data.dart';
-import '../services/void_approval_service.dart';
-import '../services/audit_service.dart';
-import '../services/order_service.dart';
 import '../widgets/order_detail_sheet.dart';
 
 class AdminOrdersPage extends StatefulWidget {
@@ -121,102 +116,96 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
   Widget build(BuildContext context) {
     final orders = _filtered;
     return Column(children: [
+      // Header clean white
       Container(
-        padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 10)),
-          ],
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -10, top: -20,
-              child: Icon(Icons.manage_accounts_rounded, size: 100, color: Colors.white.withAlpha(15)),
+        child: Column(children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.local_laundry_service_rounded, color: Color(0xFF4F46E5), size: 22),
             ),
-            Column(children: [
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.local_laundry_service_rounded, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Manajemen Pesanan', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
-                      Text('Total ${orders.length} pesanan terdaftar', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(200))),
-                    ],
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white24)),
-                child: TextField(controller: _searchCtrl, onChanged: (v) => setState(() => _search = v),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    icon: const Icon(Icons.search_rounded, color: Colors.white70, size: 20),
-                    hintText: 'Cari ID, pelanggan, atau PIC...',
-                    hintStyle: TextStyle(color: Colors.white.withAlpha(150), fontSize: 14),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    suffixIcon: _search.isNotEmpty ? IconButton(onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); }, icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 18)) : null,
-                  )),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Manajemen Pesanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+              Text('${orders.length} pesanan terdaftar', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            ])),
+          ]),
+          const SizedBox(height: 16),
+          // Search bar clean light
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC), 
+              borderRadius: BorderRadius.circular(14), 
+              border: Border.all(color: const Color(0xFFE2E8F0))
+            ),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _search = v),
+              style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14),
+              decoration: InputDecoration(
+                icon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 20),
+                hintText: 'Cari nama, ID, atau layanan...',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                suffixIcon: _search.isNotEmpty ? IconButton(onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); }, icon: Icon(Icons.close_rounded, color: Colors.grey.shade400, size: 16)) : null,
               ),
-              const SizedBox(height: 16),
-              Row(children: [
-                Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _filters.map((f) {
-                  final sel = _filter == f;
-                  return Padding(padding: const EdgeInsets.only(right: 8), child: GestureDetector(
-                    onTap: () => setState(() => _filter = f),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: sel ? Colors.white : Colors.white.withAlpha(30),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: sel ? Colors.white : Colors.white24),
-                      ),
-                      child: Text(f, style: TextStyle(color: sel ? const Color(0xFF0D47A1) : Colors.white, fontWeight: sel ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
-                    ),
-                  ));
-                }).toList()))),
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  onSelected: (v) => setState(() => _sortOrder = v),
-                  offset: const Offset(0, 44),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 10,
-                  itemBuilder: (_) => _sorts.map((s) => PopupMenuItem(
-                    value: s,
-                    child: Row(children: [
-                      Icon(s == _sortOrder ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, size: 16, color: const Color(0xFF0D47A1)),
-                      const SizedBox(width: 10),
-                      Text(s, style: TextStyle(fontSize: 13, fontWeight: s == _sortOrder ? FontWeight.bold : FontWeight.normal)),
-                    ]),
-                  )).toList(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white24)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.sort_rounded, color: Colors.white, size: 16),
-                      const SizedBox(width: 6),
-                      const Text('Urut', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                    ]),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Filter pills + sort
+          Row(children: [
+            Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _filters.map((f) {
+              final sel = _filter == f;
+              return GestureDetector(
+                onTap: () => setState(() => _filter = f),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: sel ? const Color(0xFF4F46E5) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: sel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0)),
+                    boxShadow: sel ? [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(30), blurRadius: 8, offset: const Offset(0, 3))] : null,
                   ),
+                  child: Text(f, style: TextStyle(color: sel ? Colors.white : const Color(0xFF64748B), fontWeight: sel ? FontWeight.w700 : FontWeight.w500, fontSize: 12)),
                 ),
-              ]),
-            ]),
-          ],
-        ),
+              );
+            }).toList()))),
+            const SizedBox(width: 8),
+            PopupMenuButton<String>(
+              onSelected: (v) => setState(() => _sortOrder = v),
+              offset: const Offset(0, 44),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              itemBuilder: (_) => _sorts.map((s) => PopupMenuItem(
+                value: s,
+                child: Row(children: [
+                  Icon(s == _sortOrder ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, size: 16, color: const Color(0xFF4F46E5)),
+                  const SizedBox(width: 10),
+                  Text(s, style: TextStyle(fontSize: 13, fontWeight: s == _sortOrder ? FontWeight.bold : FontWeight.normal)),
+                ]),
+              )).toList(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.sort_rounded, color: Color(0xFF64748B), size: 16),
+                  const SizedBox(width: 6),
+                  const Text('Urut', style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+            ),
+          ]),
+        ]),
       ),
       Expanded(child: orders.isEmpty
         ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -277,7 +266,24 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(o.id, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.blue.shade800, letterSpacing: 0.5)),
+              Row(
+                children: [
+                  Text(o.id, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.blue.shade800, letterSpacing: 0.5)),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: o.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32).withAlpha(30) : const Color(0xFFE65100).withAlpha(30),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: o.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32).withAlpha(100) : const Color(0xFFE65100).withAlpha(100)),
+                    ),
+                    child: Text(
+                      o.paymentStatus.toUpperCase(),
+                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: o.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100)),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 2),
               Text(o.customer, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E), letterSpacing: -0.3)),
               if (overdue) ...[const SizedBox(height: 6), Row(children: [

@@ -265,7 +265,22 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
 
                       _infoCard(Icons.auto_graph_rounded, 'STATUS & PROGRES', [
                         _statusSelector(order, (status) {
-                          widget.onUpdateOrder(order.copyWith(status: status));
+                          final now = DateTime.now();
+                          if (status == 'Sudah Diambil') {
+                            widget.onUpdateOrder(order.copyWith(
+                              status: status,
+                              pickedUpTime: now,
+                              paymentStatus: 'Lunas',
+                              paymentTime: now,
+                            ));
+                          } else if (status == 'Selesai') {
+                            widget.onUpdateOrder(order.copyWith(
+                              status: status,
+                              completedTime: now,
+                            ));
+                          } else {
+                            widget.onUpdateOrder(order.copyWith(status: status));
+                          }
                           Navigator.pop(context);
                         }),
                         const SizedBox(height: 12),
@@ -283,7 +298,67 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
                       const SizedBox(height: 20),
 
                       _infoCard(Icons.payments_outlined, 'DETAIL PEMBAYARAN', [
+                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                          const Text('Status Pembayaran', style: TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32).withAlpha(30) : const Color(0xFFE65100).withAlpha(30),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100)),
+                            ),
+                            child: Text(
+                              order.paymentStatus.toUpperCase(), 
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100))
+                            ),
+                          ),
+                        ]),
+                        const SizedBox(height: 12),
                         _infoRow('Total Tagihan', _fmt(order.price.toDouble()), color: const Color(0xFF0D47A1), large: true),
+                        // Hanya tampil jika pesanan belum final (belum Sudah Diambil)
+                        if (order.status != 'Sudah Diambil') ...[
+                          const SizedBox(height: 16),
+                          Row(children: [
+                            if (order.paymentStatus != 'Lunas') Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    widget.onUpdateOrder(order.copyWith(paymentStatus: 'Lunas', paymentTime: DateTime.now()));
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Tagihan berhasil dilunasi'), backgroundColor: Colors.green));
+                                  },
+                                  icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                                  label: const Text('TANDAI LUNAS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF2E7D32),
+                                    side: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (order.paymentStatus == 'Lunas' && widget.isAdmin) Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    widget.onUpdateOrder(order.copyWith(paymentStatus: 'Belum Lunas', paymentTime: null));
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('↩ Status pembayaran direset ke Belum Lunas'), backgroundColor: Colors.orange));
+                                  },
+                                  icon: const Icon(Icons.undo_rounded, size: 18),
+                                  label: const Text('BELUM LUNAS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFFE65100),
+                                    side: const BorderSide(color: Color(0xFFE65100), width: 2),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ]),
+                        ]
                       ]),
                       const SizedBox(height: 20),
 

@@ -10,14 +10,27 @@ class AdminMoreMenuPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 64, 24, 120),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Menu Utama', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
-          const Text('Kelola operasional & pengaturan aplikasi', style: TextStyle(fontSize: 14, color: Colors.grey)),
-          const SizedBox(height: 40),
+    return Column(
+      children: [
+        // Header light white
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Menu Utama', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+            Text('Kelola operasional & pengaturan aplikasi', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          ]),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           
           _sectionTitle('MANAJEMEN DATA'),
           _menuItem(
@@ -52,10 +65,13 @@ class AdminMoreMenuPage extends StatelessWidget {
           Center(
             child: Text('LaundryKu Premium v1.2.0', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontWeight: FontWeight.bold)),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
-    ).animate().fade(duration: 400.ms).slideY(begin: 0.05, end: 0);
-  }
+    ],
+  ).animate().fade(duration: 400.ms).slideY(begin: 0.05, end: 0);
+}
 
   Widget _sectionTitle(String title) {
     return Padding(

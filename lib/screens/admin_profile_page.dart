@@ -95,12 +95,22 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     final user = widget.appState.currentUser;
     return Column(children: [
       Container(
-        padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1565C0)], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
+        ),
         child: Row(children: [
-          const Icon(Icons.person_rounded, color: Colors.white, size: 28),
-          const SizedBox(width: 12),
-          Text('Profil Admin', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.person_rounded, color: Color(0xFF4F46E5), size: 24),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Profil Saya', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+            Text('Kelola akun & pengaturan keamanan', style: TextStyle(fontSize: 11, color: Colors.grey)),
+          ])),
         ]),
       ),
       Expanded(child: SingleChildScrollView(
@@ -143,8 +153,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               const SizedBox(height: 24),
               SizedBox(width: double.infinity, height: 52, child: ElevatedButton(
                 onPressed: _isLoading ? null : _changePassword,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D47A1), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                child: _isLoading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text('Simpan Password', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5), foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                child: _isLoading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Simpan Password', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               )),
             ]),
           ),
@@ -181,8 +191,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 12, offset: const Offset(0, 4))]),
               child: Row(children: [
-                Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFF0D47A1).withAlpha(15), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.price_change_rounded, color: Color(0xFF0D47A1), size: 22)),
+                Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.price_change_rounded, color: Color(0xFF4F46E5), size: 22)),
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Manajemen Harga', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
@@ -231,7 +241,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   Widget _label(String t) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(t, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 0.5)));
 
   Widget _passField(TextEditingController ctrl, bool obscure, VoidCallback toggle) => Container(
-    decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(14)),
+    decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE2E8F0))),
     child: TextField(controller: ctrl, obscureText: obscure,
       decoration: InputDecoration(prefixIcon: const Icon(Icons.lock_outline, size: 20, color: Colors.grey), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         suffixIcon: IconButton(icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: Colors.grey), onPressed: toggle))),

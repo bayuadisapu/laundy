@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:printing/printing.dart';
 import '../models/app_data.dart';
 import '../services/order_service.dart';
@@ -31,6 +29,7 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   DateTime _estimatedDate = DateTime.now().add(const Duration(days: 3));
   DateTime _orderTime = DateTime.now();
   bool _isSaving = false;
+  String _paymentStatus = 'Belum Lunas';
 
   @override
   void initState() {
@@ -91,6 +90,9 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
         notes: _noteCtrl.text.trim(),
         estimatedDate: DateFormat('yyyy-MM-dd').format(_estimatedDate),
         orderTime: _orderTime,
+        shopId: widget.appState.currentShop.id,
+        paymentStatus: _paymentStatus,
+        paymentTime: _paymentStatus == 'Lunas' ? DateTime.now() : null,
       );
 
       // 1. Simpan ke database dulu
@@ -116,6 +118,7 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
       _selectedService = _defaultService;
       _orderTime = DateTime.now();
       _estimatedDate = DateTime.now().add(const Duration(days: 3));
+      _paymentStatus = 'Belum Lunas';
     });
   }
 
@@ -151,35 +154,90 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
 
     // Fallback: Print PDF
     final pdf = pw.Document();
+    final fmt = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+    final fmtRp = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
     for (int copy = 0; copy < 2; copy++) {
       pdf.addPage(pw.Page(
         pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.all(8),
         build: (ctx) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
-          pw.Text(settings.name, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+
+          // HEADER
+          pw.Text(settings.name, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
           if (settings.address.isNotEmpty) pw.Text(settings.address, style: const pw.TextStyle(fontSize: 8)),
           if (settings.phone.isNotEmpty) pw.Text('WA: ${settings.phone}', style: const pw.TextStyle(fontSize: 8)),
-          pw.Text(copy == 0 ? 'STRUK PELANGGAN' : 'STRUK RAK', style: const pw.TextStyle(fontSize: 10)),
-          pw.Divider(),
-          pw.SizedBox(height: 6),
+          pw.Text(copy == 0 ? 'STRUK PELANGGAN' : 'STRUK RAK', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+          pw.Divider(borderStyle: pw.BorderStyle.dashed),
+
+          // NAMA PELANGGAN BESAR
+          pw.SizedBox(height: 4),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.symmetric(vertical: 4),
+            child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text(
+                order.customer.toUpperCase(),
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+              ),
+              if (order.phone.isNotEmpty)
+                pw.Text(order.phone, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+            ]),
+          ),
+          pw.Divider(borderStyle: pw.BorderStyle.dashed),
+
+          // INFO TANGGAL
+          _pRow('Tgl Terima', DateFormat('dd/MM/yyyy HH:mm').format(order.orderTime)),
+          _pRow('Est Selesai', order.estimatedDate),
           _pRow('No. Order', order.id),
-          _pRow('Pelanggan', order.customer),
-          if (order.phone.isNotEmpty) _pRow('Telepon', order.phone),
-          _pRow('Layanan', order.service),
-          _pRow('Berat', '${order.weight} ${_currentPrice?.unit ?? "kg"}'),
-          _pRow('Harga Satuan', _fmt(order.pricePerUnit)),
-          _pRow('TOTAL', _fmt(order.price)),
-          _pRow('PIC', order.picName),
-          _pRow('Masuk', DateFormat('dd/MM/yyyy HH:mm').format(order.orderTime)),
-          _pRow('Estimasi', order.estimatedDate),
-          if (order.notes.isNotEmpty) _pRow('Catatan', order.notes),
-          pw.SizedBox(height: 8),
           pw.Divider(),
-          pw.SizedBox(height: 8),
+
+          // CATATAN
+          pw.Align(alignment: pw.Alignment.centerLeft, child: pw.Text('CATATAN :', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold))),
+          pw.Align(alignment: pw.Alignment.centerLeft, child: pw.Text(order.notes.isNotEmpty ? order.notes : '-', style: const pw.TextStyle(fontSize: 9))),
+          pw.Divider(),
+
+          // LAYANAN
+          pw.SizedBox(height: 4),
+          pw.Align(
+            alignment: pw.Alignment.centerLeft,
+            child: pw.Text(order.service.toUpperCase(), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          ),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text('  @${order.weight} ${_currentPrice?.unit ?? "kg"}', style: const pw.TextStyle(fontSize: 10)),
+            pw.Text(fmt.format(order.price), style: const pw.TextStyle(fontSize: 10)),
+          ]),
+          pw.SizedBox(height: 4),
+          pw.Divider(borderStyle: pw.BorderStyle.dashed),
+
+          // TOTAL
+          _pRow('Sub-total', fmt.format(order.price)),
+          _pRow('Diskon', '0'),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text('Grand Total', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.Text(fmt.format(order.price), style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          ]),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text('Bayar', style: const pw.TextStyle(fontSize: 10)),
+            pw.Text(
+              order.paymentStatus == 'Lunas' ? '${fmt.format(order.price)} (LUNAS)' : 'BELUM LUNAS',
+              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+            ),
+          ]),
+          pw.Divider(),
+
+          // BARCODE
+          pw.SizedBox(height: 6),
+          pw.Text('- SCAN ME -', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 4),
           pw.BarcodeWidget(barcode: pw.Barcode.code128(), data: order.id, width: 180, height: 50),
           pw.SizedBox(height: 4),
-          pw.Text(order.id, style: const pw.TextStyle(fontSize: 10)),
-          pw.SizedBox(height: 8),
-          pw.Text(settings.receiptFooter, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.Text(order.id, style: const pw.TextStyle(fontSize: 9)),
+          pw.SizedBox(height: 6),
+
+          // FOOTER
+          pw.Text(settings.receiptFooter, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.Text('Harap bawa struk saat pengambilan.', style: const pw.TextStyle(fontSize: 8)),
         ]),
       ));
     }
@@ -200,51 +258,38 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
     final unit = cfg?.unit ?? 'kg';
 
     return Column(children: [
+      // Header light white
       Container(
-        padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 10)),
-          ],
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
         ),
-        child: Stack(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Positioned(
-              right: -10, top: -20,
-              child: Icon(Icons.add_task_rounded, size: 100, color: Colors.white.withAlpha(15)),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Input Pesanan Baru', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
-                      Text('Silakan isi formulir di bawah ini', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(200))),
-                    ],
-                  ),
-                ]),
-                Container(
-                  decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(14)),
-                  child: IconButton(
-                    icon: const Icon(Icons.print_rounded, color: Colors.white),
-                    onPressed: () => PrinterSettingsDialog.show(context),
-                    tooltip: 'Pengaturan Printer',
-                  ),
-                ),
-              ],
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF4F46E5), size: 22),
+              ),
+              const SizedBox(width: 14),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Input Pesanan Baru', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                  Text('Silakan isi formulir di bawah ini', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
+            ]),
+            Container(
+              decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+              child: IconButton(
+                icon: const Icon(Icons.print_rounded, color: Color(0xFF64748B), size: 22),
+                onPressed: () => PrinterSettingsDialog.show(context),
+                tooltip: 'Pengaturan Printer',
+              ),
             ),
           ],
         ),
@@ -308,6 +353,16 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
               _card(children: [
                 _label('CATATAN'),
                 _textField(_noteCtrl, Icons.notes_outlined, 'Misal: Jangan disetrika, pisah warna putih', maxLines: 3),
+              ]),
+              const SizedBox(height: 16),
+              _card(children: [
+                _label('STATUS PEMBAYARAN *'),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(child: _paymentOption('Belum Lunas', Icons.money_off_rounded, 'Bayar Nanti')),
+                  const SizedBox(width: 12),
+                  Expanded(child: _paymentOption('Lunas', Icons.payments_rounded, 'Bayar Sekarang')),
+                ]),
               ]),
               const SizedBox(height: 16),
               Container(
@@ -421,6 +476,28 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
         Icon(icon, size: 20, color: Colors.grey.shade400), const SizedBox(width: 12),
         Text(text, style: TextStyle(fontSize: 14, color: const Color(0xFF1A1C1E))),
       ]),
+    );
+  }
+
+  Widget _paymentOption(String status, IconData icon, String label) {
+    final sel = _paymentStatus == status;
+    return GestureDetector(
+      onTap: () => setState(() => _paymentStatus = status),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: sel ? (status == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100)) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: sel ? Colors.transparent : Colors.grey.shade300, width: 1.5),
+          boxShadow: sel ? [BoxShadow(color: (status == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100)).withAlpha(60), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        ),
+        child: Column(children: [
+          Icon(icon, size: 28, color: sel ? Colors.white : Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: sel ? Colors.white : Colors.grey.shade600)),
+        ]),
+      ),
     );
   }
 }

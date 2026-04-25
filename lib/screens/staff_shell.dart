@@ -7,6 +7,7 @@ import 'staff_new_order_view.dart';
 import 'scan_barcode_view.dart';
 import 'history_page.dart';
 import '../services/shop_service.dart';
+import '../services/supabase_service.dart';
 
 class StaffShell extends StatefulWidget {
   final AppState appState;
@@ -33,16 +34,18 @@ class _StaffShellState extends State<StaffShell> {
       final shopId = _appState.currentUser?.shopId;
       if (shopId == null) throw Exception('Toko tidak ditemukan untuk akun ini.');
 
-      final orders = await OrderService().fetchOrders(shopId);
-      final prices = await OrderService().fetchPrices(shopId);
-      final shop = await ShopService().fetchShop(shopId);
-      
+      final results = await Future.wait([
+        OrderService().fetchOrders(shopId).catchError((_) => <OrderData>[]),
+        OrderService().fetchPrices(shopId).catchError((_) => PriceConfig.defaultPrices()),
+        ShopService().fetchShop(shopId).catchError((_) => ShopData.defaultShop()),
+      ]);
+
       if (!mounted) return;
       setState(() {
         _appState.orders.clear();
-        _appState.orders.addAll(orders);
-        _appState.prices = prices;
-        _appState.currentShop = shop;
+        _appState.orders.addAll(results[0] as List<OrderData>);
+        _appState.prices = results[1] as List<PriceConfig>;
+        _appState.currentShop = results[2] as ShopData;
       });
     } catch (e) {
       if (!mounted) return;
@@ -75,7 +78,7 @@ class _StaffShellState extends State<StaffShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      StaffDashboardView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder),
+      StaffDashboardView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder, onLogout: _logout),
       StaffNewOrderView(appState: _appState, onAddOrder: _addOrder, onRefresh: _refresh),
       ScanBarcodeView(appState: _appState, onRefresh: _refresh, onUpdateOrder: _updateOrder),
       HistoryPage(appState: _appState, isAdmin: false, onRefresh: _refresh, onUpdateOrder: _updateOrder),
@@ -91,7 +94,7 @@ class _StaffShellState extends State<StaffShell> {
             return Row(
               children: [
                 _buildNavRail(),
-                const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE0E0E0)),
+                const VerticalDivider(thickness: 1, width: 1, color: Color(0xFFE2E8F0)),
                 Expanded(
                   child: Stack(
                     children: [
@@ -117,23 +120,39 @@ class _StaffShellState extends State<StaffShell> {
     );
   }
 
+  void _logout() {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: const Text('Konfirmasi Logout', style: TextStyle(fontWeight: FontWeight.w900)),
+      content: const Text('Apakah Anda yakin ingin keluar dari akun staff?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal', style: TextStyle(color: Colors.grey))),
+        ElevatedButton(
+          onPressed: () async { Navigator.pop(ctx); await SupabaseService.signOut(); if (context.mounted) Navigator.pushReplacementNamed(context, '/'); },
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          child: const Text('Keluar Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ));
+  }
+
   Widget _buildNavRail() {
     return NavigationRail(
       selectedIndex: _currentIndex,
       onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
       labelType: NavigationRailLabelType.all,
       backgroundColor: Colors.white,
-      selectedIconTheme: const IconThemeData(color: Color(0xFF1E88E5), size: 28),
+      selectedIconTheme: const IconThemeData(color: Color(0xFF4F46E5), size: 28),
       unselectedIconTheme: IconThemeData(color: Colors.grey.shade400, size: 24),
-      selectedLabelTextStyle: const TextStyle(color: Color(0xFF1E88E5), fontWeight: FontWeight.bold, fontSize: 12),
-      unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-      indicatorColor: const Color(0xFFDCEDFF),
-      leading: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Icon(Icons.local_laundry_service_rounded, color: const Color(0xFF1E88E5), size: 32),
+      selectedLabelTextStyle: const TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.w900, fontSize: 11),
+      unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+      indicatorColor: const Color(0xFFEEF2FF),
+      leading: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Icon(Icons.local_laundry_service_rounded, color: Color(0xFF4F46E5), size: 32),
       ),
       destinations: const [
-        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Dashboard')),
+        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Beranda')),
         NavigationRailDestination(icon: Icon(Icons.add_circle_outline_rounded), label: Text('Input')),
         NavigationRailDestination(icon: Icon(Icons.qr_code_scanner_rounded), label: Text('Scan')),
         NavigationRailDestination(icon: Icon(Icons.history_rounded), label: Text('Riwayat')),
@@ -175,17 +194,18 @@ class _StaffShellState extends State<StaffShell> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: sel ? const Color(0xFFDCEDFF) : Colors.transparent,
+                  color: sel ? const Color(0xFF4F46E5) : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: sel ? const Color(0xFF1E88E5) : Colors.grey.shade400, size: 24),
+                child: Icon(icon, color: sel ? Colors.white : Colors.grey.shade400, size: 24),
               ),
               if (sel) ...[
                 const SizedBox(height: 2),
-                Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF1E88E5))),
+                Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF4F46E5))),
               ],
             ],
           ),

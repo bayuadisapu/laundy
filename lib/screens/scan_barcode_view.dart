@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:intl/intl.dart';
@@ -20,12 +20,26 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
   final _focusNode = FocusNode();
   final List<Map<String, dynamic>> _history = [];
   OrderData? _scannedOrder;
+  bool _scannerReady = false;
 
   @override
   void initState() {
     super.initState();
     _animCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _focusNode.requestFocus());
+    
+    // Monitor apakah text field fokus (menentukan apakah scanner siap)
+    _focusNode.addListener(() {
+      if (mounted) setState(() => _scannerReady = _focusNode.hasFocus);
+    });
+    
+    // Auto-fokus saat pertama kali tampil
+    WidgetsBinding.instance.addPostFrameCallback((_) => _requestFocus());
+  }
+
+  void _requestFocus() {
+    // Sembunyikan keyboard (scanner fisik tidak butuh keyboard layar)
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
+    _focusNode.requestFocus();
   }
 
   @override
@@ -43,10 +57,14 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
     if (idx == -1) {
       _snack('Pesanan "$code" tidak ditemukan!', isError: true);
       _barcodeCtrl.clear();
+      // Langsung refocus setelah scan agar scanner bisa scan lagi
+      Future.delayed(const Duration(milliseconds: 100), _requestFocus);
       return;
     }
     setState(() => _scannedOrder = widget.appState.orders[idx]);
     _barcodeCtrl.clear();
+    // Langsung refocus setelah scan
+    Future.delayed(const Duration(milliseconds: 100), _requestFocus);
   }
 
   void _confirmScan(OrderData order) {
@@ -72,10 +90,22 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
         ElevatedButton(
           onPressed: () async {
             Navigator.pop(ctx);
+            final now = DateTime.now();
             await OrderService().updateStatus(order.id, nextStatus);
+            // Update memori lokal agar dashboard langsung berubah
+            if (nextStatus == 'Sudah Diambil') {
+              widget.onUpdateOrder(order.copyWith(
+                status: nextStatus,
+                pickedUpTime: now,
+                paymentStatus: 'Lunas',
+                paymentTime: now,
+              ));
+            } else {
+              widget.onUpdateOrder(order.copyWith(status: nextStatus, completedTime: now));
+            }
             widget.onRefresh();
             setState(() {
-              _history.insert(0, {'id': order.id, 'customer': order.customer, 'status': nextStatus, 'time': DateFormat('HH:mm').format(DateTime.now())});
+              _history.insert(0, {'id': order.id, 'customer': order.customer, 'status': nextStatus, 'time': DateFormat('HH:mm').format(now)});
               _scannedOrder = null;
             });
             _snack('✓ ${order.id} → $nextStatus');
@@ -96,18 +126,50 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
+    // GestureDetector di root: tap di mana saja → refocus scanner
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _requestFocus,
+      child: Column(children: [
       Container(
-        padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-        decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF1565C0), Color(0xFF1E88E5)], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
+        ),
         child: Row(children: [
-          const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
-          const SizedBox(width: 12),
-          Text('Scan Barcode', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF4F46E5), size: 22),
+          ),
+          const SizedBox(width: 14),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Scan Barcode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+              Text('Tandai selesai atau checkout', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            ],
+          ),
           const Spacer(),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [const Icon(Icons.circle, size: 8, color: Colors.greenAccent), const SizedBox(width: 6), Text('LIVE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white))])),
+          // Indikator status scanner: SIAP / TIDAK SIAP
+          GestureDetector(
+            onTap: _requestFocus,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _scannerReady ? const Color(0xFFF0FDF4) : const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _scannerReady ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2)),
+              ),
+              child: Row(children: [
+                Icon(Icons.circle, size: 7, color: _scannerReady ? const Color(0xFF16A34A) : const Color(0xFFEF4444)),
+                const SizedBox(width: 6),
+                Text(_scannerReady ? 'READY' : 'OFFLINE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: _scannerReady ? const Color(0xFF16A34A) : const Color(0xFFEF4444), letterSpacing: 0.5)),
+              ]),
+            ),
+          ),
         ]),
       ),
       Expanded(child: SingleChildScrollView(
@@ -127,39 +189,96 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
             ]),
           ),
           const SizedBox(height: 20),
-          // Input field (handles physical scanner & manual input)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 12, offset: const Offset(0, 4))]),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('INPUT BARCODE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: Container(
-                  decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(14)),
-                  child: KeyboardListener(
-                    focusNode: FocusNode(),
-                    onKeyEvent: (e) {
-                      if (e is KeyUpEvent && e.logicalKey == LogicalKeyboardKey.enter) {
-                        _processBarcode(_barcodeCtrl.text);
-                      }
-                    },
+
+          // Status Card Scanner
+          GestureDetector(
+            onTap: _requestFocus,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _scannerReady ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _scannerReady ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+                  width: 2,
+                ),
+              ),
+              child: Column(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(
+                    _scannerReady ? Icons.qr_code_scanner_rounded : Icons.touch_app_rounded,
+                    color: _scannerReady ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(
+                      _scannerReady ? '✅ Scanner Siap!' : '⚠️ Scanner Tidak Aktif',
+                      style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold,
+                        color: _scannerReady ? const Color(0xFF2E7D32) : const Color(0xFFD32F2F),
+                      ),
+                    ),
+                    Text(
+                      _scannerReady ? 'Arahkan scanner ke barcode sekarang' : 'Ketuk area ini untuk mengaktifkan',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _scannerReady ? Colors.green.shade700 : Colors.red.shade700,
+                      ),
+                    ),
+                  ]),
+                ]),
+                // Hidden text field: menerima input dari scanner fisik
+                SizedBox(
+                  height: 0,
+                  child: Opacity(
+                    opacity: 0,
                     child: TextField(
-                      controller: _barcodeCtrl, focusNode: _focusNode,
+                      controller: _barcodeCtrl,
+                      focusNode: _focusNode,
                       onSubmitted: _processBarcode,
-                      decoration: InputDecoration(prefixIcon: const Icon(Icons.qr_code_2, color: Colors.grey), hintText: 'LF-XXXXXX-XXXX atau scan...', hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16)),
+                      keyboardType: TextInputType.none, // Tidak munculkan keyboard layar
                     ),
                   ),
-                )),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () => _processBarcode(_barcodeCtrl.text),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E88E5), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  child: Text('SCAN!', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ]),
-              const SizedBox(height: 8),
-              Text('Alat scanner fisik akan otomatis terdeteksi. Atau ketik ID manual lalu tekan Enter.', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Input manual (fallback jika scanner belum ada)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 8, offset: const Offset(0, 3))],
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('INPUT MANUAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 0.5)),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(12)),
+                    child: TextField(
+                      onSubmitted: (v) { _processBarcode(v); },
+                      decoration: InputDecoration(
+                        hintText: 'Ketik ID pesanan lalu Enter...',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                        prefixIcon: Icon(Icons.keyboard_rounded, color: Colors.grey.shade400, size: 18),
+                      ),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 6),
+              Text('Gunakan ini jika tidak punya scanner fisik', style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
             ]),
           ),
           // Scanned result
@@ -198,7 +317,7 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
           ],
         ]),
       )),
-    ]);
+    ])); // tutup GestureDetector > Column
   }
 
   Widget _buildScannedResult(OrderData o) {

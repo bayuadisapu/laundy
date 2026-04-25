@@ -1,19 +1,16 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
-import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/app_data.dart';
-import '../services/supabase_service.dart';
 import '../widgets/order_detail_sheet.dart';
 
 class StaffDashboardView extends StatelessWidget {
   final AppState appState;
   final VoidCallback onRefresh;
   final Function(OrderData) onUpdateOrder;
-  const StaffDashboardView({super.key, required this.appState, required this.onRefresh, required this.onUpdateOrder});
+  final VoidCallback onLogout;
+  const StaffDashboardView({super.key, required this.appState, required this.onRefresh, required this.onUpdateOrder, required this.onLogout});
 
-  String _fmt(int v) => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(v);
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +44,10 @@ class StaffDashboardView extends StatelessWidget {
                       crossAxisSpacing: 12,
                       childAspectRatio: isWide ? 1.5 : 1.1,
                       children: [
-                        _StatCard(label: 'DIPROSES', value: '${appState.totalProses}', icon: Icons.sync_rounded, color: const Color(0xFFFFF3E0), iconColor: const Color(0xFFE65100)),
-                        _StatCard(label: 'SELESAI', value: '${appState.totalSelesai}', icon: Icons.check_circle_outline_rounded, color: const Color(0xFFE8F5E9), iconColor: const Color(0xFF2E7D32)),
-                        _StatCard(label: 'SUDAH DIAMBIL', value: '${appState.totalSudahDiambil}', icon: Icons.inventory_2_outlined, color: const Color(0xFFF3E5F5), iconColor: const Color(0xFF7B1FA2)),
-                        _StatCard(label: 'PENDAPATAN HARI INI', value: 'Rp ${todayIncome >= 1000000 ? "${(todayIncome/1000000).toStringAsFixed(1)}Jt" : todayIncome >= 1000 ? "${(todayIncome/1000).toStringAsFixed(0)}K" : "$todayIncome"}', icon: Icons.payments_outlined, color: const Color(0xFFE3F2FD), iconColor: const Color(0xFF1565C0)),
+                        _StatCard(label: 'DIPROSES', value: '${appState.totalProses}', icon: Icons.sync_rounded, color: const Color(0xFFFFF7ED), iconColor: const Color(0xFFEA580C)),
+                        _StatCard(label: 'SELESAI', value: '${appState.totalSelesai}', icon: Icons.check_circle_outline_rounded, color: const Color(0xFFF0FDF4), iconColor: const Color(0xFF16A34A)),
+                        _StatCard(label: 'SUDAH DIAMBIL', value: '${appState.totalSudahDiambil}', icon: Icons.inventory_2_outlined, color: const Color(0xFFF5F3FF), iconColor: const Color(0xFF7C3AED)),
+                        _StatCard(label: 'PENDAPATAN HARI INI', value: 'Rp ${todayIncome >= 1000000 ? "${(todayIncome/1000000).toStringAsFixed(1)}Jt" : todayIncome >= 1000 ? "${(todayIncome/1000).toStringAsFixed(0)}K" : "$todayIncome"}', icon: Icons.payments_outlined, color: const Color(0xFFEFF6FF), iconColor: const Color(0xFF2563EB)),
                       ],
                     );
                   }),
@@ -94,57 +91,57 @@ class StaffDashboardView extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context, StaffData? user) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0D47A1), Color(0xFF1E88E5), Color(0xFF42A5F5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF0D47A1).withAlpha(60), blurRadius: 20, offset: const Offset(0, 10)),
-        ],
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
       ),
-      child: Stack(
+      child: Row(
         children: [
-          // Background pattern
-          Positioned(
-            right: -20, top: -20,
-            child: Icon(Icons.local_laundry_service_rounded, size: 120, color: Colors.white.withAlpha(20)),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF4F46E5).withAlpha(50), width: 2),
+            ),
+            child: CircleAvatar(
+              radius: 26,
+              backgroundImage: user?.imgUrl != null ? NetworkImage(user!.imgUrl!) : null,
+              backgroundColor: const Color(0xFFEEF2FF),
+              child: user?.imgUrl == null ? const Icon(Icons.person_rounded, color: Color(0xFF4F46E5), size: 24) : null,
+            ),
           ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Selamat bekerja,', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 1),
+                Text(
+                  user?.name ?? 'Staff',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                ),
+              ],
+            ),
+          ),
+          // Actions
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white30, width: 2)),
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundImage: NetworkImage(user?.imgUrl ?? 'https://i.pravatar.cc/150?u=${user?.id ?? "staff"}'),
-                  backgroundColor: Colors.white24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Selamat datang,', style: TextStyle(fontSize: 14, color: Colors.white.withAlpha(180), fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 2),
-                    Text(
-                      user?.name ?? 'Staff',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(color: Colors.white.withAlpha(40), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
                 child: IconButton(
-                  onPressed: () async {
-                    await SupabaseService.signOut();
-                    if (context.mounted) Navigator.pushReplacementNamed(context, '/');
-                  },
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B), size: 22),
+                  tooltip: 'Refresh',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFEE2E2))),
+                child: IconButton(
+                  onPressed: onLogout,
+                  icon: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 22),
                   tooltip: 'Logout',
                 ),
               ),
@@ -249,8 +246,21 @@ class _OrderItem extends StatelessWidget {
                   Row(children: [
                     Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(8)), child: Text(order.id, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.blue.shade800))),
                     const SizedBox(width: 8),
-                    Text(order.service, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32).withAlpha(30) : const Color(0xFFE65100).withAlpha(30),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32).withAlpha(100) : const Color(0xFFE65100).withAlpha(100)),
+                      ),
+                      child: Text(
+                        order.paymentStatus.toUpperCase(),
+                        style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100)),
+                      ),
+                    ),
                   ]),
+                  const SizedBox(height: 4),
+                  Text(order.service, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),

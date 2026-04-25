@@ -113,10 +113,10 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Widget _buildHeader(bool isMobile) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, isMobile ? 52 : 64, 24, 24),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(24, isMobile ? 60 : 64, 24, 24),
+      decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,26 +124,33 @@ class _HistoryPageState extends State<HistoryPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Riwayat Pesanan', style: TextStyle(fontSize: isMobile ? 24 : 28, fontWeight: FontWeight.w900, color: const Color(0xFF1A1C1E))),
-                  Text('Total ${widget.appState.orders.length} pesanan tercatat', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Riwayat Pesanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                    Text('Total ${widget.appState.orders.length} pesanan tercatat', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
               ),
-              IconButton(onPressed: widget.onRefresh, icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0D47A1))),
+              Container(
+                decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: IconButton(onPressed: widget.onRefresh, icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B), size: 20)),
+              ),
             ],
           ),
           const SizedBox(height: 20),
           Container(
-            decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE2E8F0))),
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _searchQuery = v),
+              style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Cari nama atau ID...',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); }) : null,
+                hintText: 'Cari ID, Nama, atau Layanan...',
+                hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                prefixIcon: Icon(Icons.search_rounded, size: 20, color: Colors.grey.shade400),
+                suffixIcon: _searchQuery.isNotEmpty ? IconButton(icon: Icon(Icons.clear, size: 18, color: Colors.grey.shade400), onPressed: () { _searchCtrl.clear(); setState(() => _searchQuery = ''); }) : null,
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
@@ -168,12 +175,13 @@ class _HistoryPageState extends State<HistoryPage> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text(s, style: TextStyle(color: sel ? Colors.white : Colors.black87, fontSize: 12)),
+                  label: Text(s, style: TextStyle(color: sel ? Colors.white : const Color(0xFF64748B), fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
                   selected: sel,
                   onSelected: (v) => setState(() => _statusFilter = s),
-                  selectedColor: const Color(0xFF0D47A1),
+                  selectedColor: const Color(0xFF4F46E5),
                   backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: sel ? Colors.transparent : Colors.grey.shade300)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: sel ? Colors.transparent : const Color(0xFFE2E8F0))),
+                  showCheckmark: false,
                 ),
               );
             }).toList(),
@@ -282,7 +290,19 @@ class _OrderCard extends StatelessWidget {
                       decoration: BoxDecoration(color: _statusColor.withAlpha(30), borderRadius: BorderRadius.circular(8)),
                       child: Text(order.status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: _statusColor, letterSpacing: 0.5)),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32).withAlpha(20) : const Color(0xFFE65100).withAlpha(20),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        order.paymentStatus.toUpperCase(),
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: order.paymentStatus == 'Lunas' ? const Color(0xFF2E7D32) : const Color(0xFFE65100)),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(order.formattedPrice, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1A1C1E))),
                   ],
                 ),

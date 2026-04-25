@@ -75,84 +75,103 @@ class PrinterService {
       final profile = await CapabilityProfile.load();
       final generator = Generator(_paperSize, profile);
       List<int> bytes = [];
+      final fmt = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+      final sep = '================================';
+      final sepLight = '--------------------------------';
 
-      bytes += generator.text(settings.name, styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
-      if (settings.address.isNotEmpty) bytes += generator.text(settings.address, styles: const PosStyles(align: PosAlign.center));
-      if (settings.phone.isNotEmpty) bytes += generator.text('WA: ${settings.phone}', styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.text('Sistem Manajemen Laundry', styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.text('--------------------------------', styles: const PosStyles(align: PosAlign.center));
+      // ===== HEADER =====
+      bytes += generator.text(settings.name,
+          styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
+      if (settings.address.isNotEmpty)
+        bytes += generator.text(settings.address, styles: const PosStyles(align: PosAlign.center));
+      if (settings.phone.isNotEmpty)
+        bytes += generator.text('WA: ${settings.phone}', styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.text(sepLight, styles: const PosStyles(align: PosAlign.center));
+
+      // ===== NAMA PELANGGAN BESAR (seperti nota referensi) =====
       bytes += generator.emptyLines(1);
-
-      bytes += generator.row([
-        PosColumn(text: 'No. Order:', width: 4),
-        PosColumn(text: order.id, width: 8, styles: const PosStyles(bold: true, align: PosAlign.right)),
-      ]);
-      bytes += generator.row([
-        PosColumn(text: 'Pelanggan:', width: 4),
-        PosColumn(text: order.customer, width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-      if (order.phone.isNotEmpty) {
-        bytes += generator.row([
-          PosColumn(text: 'Telepon:', width: 4),
-          PosColumn(text: order.phone, width: 8, styles: const PosStyles(align: PosAlign.right)),
-        ]);
-      }
-      bytes += generator.row([
-        PosColumn(text: 'Layanan:', width: 4),
-        PosColumn(text: order.service, width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-      
-      final unit = order.service.toLowerCase() == 'satuan' ? 'pcs' : 'kg';
-      bytes += generator.row([
-        PosColumn(text: 'Berat/Jml:', width: 4),
-        PosColumn(text: '${order.weight} $unit', width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-      
-      final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-      bytes += generator.row([
-        PosColumn(text: 'Harga/Unit:', width: 4),
-        PosColumn(text: fmt.format(order.pricePerUnit), width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-      
-      bytes += generator.text('--------------------------------', styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.row([
-        PosColumn(text: 'TOTAL', width: 4, styles: const PosStyles(bold: true)),
-        PosColumn(text: fmt.format(order.price), width: 8, styles: const PosStyles(bold: true, align: PosAlign.right, height: PosTextSize.size2)),
-      ]);
-      bytes += generator.text('--------------------------------', styles: const PosStyles(align: PosAlign.center));
-      
-      bytes += generator.row([
-        PosColumn(text: 'Tgl Masuk:', width: 4),
-        PosColumn(text: DateFormat('dd/MM/yy HH:mm').format(order.orderTime), width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-      bytes += generator.row([
-        PosColumn(text: 'Estimasi:', width: 4),
-        PosColumn(text: order.estimatedDate, width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-      bytes += generator.row([
-        PosColumn(text: 'Kasir/PIC:', width: 4),
-        PosColumn(text: order.picName, width: 8, styles: const PosStyles(align: PosAlign.right)),
-      ]);
-
-      if (order.notes.isNotEmpty) {
-        bytes += generator.emptyLines(1);
-        bytes += generator.text('Catatan:', styles: const PosStyles(bold: true));
-        bytes += generator.text(order.notes);
-      }
-
+      bytes += generator.text(
+        order.customer.toUpperCase(),
+        styles: const PosStyles(
+          align: PosAlign.left,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+          bold: true,
+        ),
+      );
+      if (order.phone.isNotEmpty)
+        bytes += generator.text(
+          order.phone,
+          styles: const PosStyles(align: PosAlign.left, height: PosTextSize.size2, bold: true),
+        );
       bytes += generator.emptyLines(1);
-      
-      // Barcode
+      bytes += generator.text(sepLight, styles: const PosStyles(align: PosAlign.center));
+
+      // ===== TANGGAL & INFO =====
+      bytes += generator.row([
+        PosColumn(text: 'Tgl Terima :', width: 6),
+        PosColumn(text: DateFormat('dd/MM/yy HH:mm').format(order.orderTime), width: 6, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+      bytes += generator.row([
+        PosColumn(text: 'Est Selesai:', width: 6),
+        PosColumn(text: order.estimatedDate, width: 6, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+      bytes += generator.row([
+        PosColumn(text: 'No. Order  :', width: 6),
+        PosColumn(text: order.id, width: 6, styles: const PosStyles(align: PosAlign.right, bold: true)),
+      ]);
+      bytes += generator.text(sep, styles: const PosStyles(align: PosAlign.center));
+
+      // ===== CATATAN =====
+      bytes += generator.text('CATATAN :', styles: const PosStyles(bold: true));
+      bytes += generator.text(order.notes.isNotEmpty ? order.notes : '-');
+      bytes += generator.text(sep, styles: const PosStyles(align: PosAlign.center));
+
+      // ===== LAYANAN =====
+      bytes += generator.emptyLines(1);
+      final unit = order.service.toLowerCase() == 'satuan' ? 'pcs' : 'Kg';
+      bytes += generator.text(
+        order.service.toUpperCase(),
+        styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1),
+      );
+      bytes += generator.row([
+        PosColumn(text: '  @${order.weight} $unit', width: 7),
+        PosColumn(text: fmt.format(order.price), width: 5, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+      bytes += generator.emptyLines(1);
+      bytes += generator.text(sepLight, styles: const PosStyles(align: PosAlign.center));
+
+      // ===== TOTAL =====
+      bytes += generator.row([
+        PosColumn(text: 'Sub-total', width: 7),
+        PosColumn(text: fmt.format(order.price), width: 5, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+      bytes += generator.row([
+        PosColumn(text: 'Grand Total', width: 7, styles: const PosStyles(bold: true)),
+        PosColumn(text: fmt.format(order.price), width: 5, styles: const PosStyles(align: PosAlign.right, bold: true)),
+      ]);
+      bytes += generator.row([
+        PosColumn(text: 'Bayar', width: 7),
+        PosColumn(
+          text: order.paymentStatus == 'Lunas' ? '${fmt.format(order.price)} (LUNAS)' : 'BELUM LUNAS',
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right, bold: true),
+        ),
+      ]);
+      bytes += generator.text(sep, styles: const PosStyles(align: PosAlign.center));
+
+      // ===== BARCODE =====
+      bytes += generator.emptyLines(1);
+      bytes += generator.text('- SCAN ME -', styles: const PosStyles(align: PosAlign.center, bold: true));
       final List<int> barData = order.id.codeUnits;
-      bytes += generator.barcode(Barcode.code128(barData), height: 50);
+      bytes += generator.barcode(Barcode.code128(barData), height: 60);
       bytes += generator.text(order.id, styles: const PosStyles(align: PosAlign.center));
-      
       bytes += generator.emptyLines(1);
+
+      // ===== FOOTER =====
       bytes += generator.text(settings.receiptFooter, styles: const PosStyles(align: PosAlign.center, bold: true));
-      bytes += generator.text('Harap bawa struk ini saat', styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.text('pengambilan pakaian.', styles: const PosStyles(align: PosAlign.center));
-      
-      bytes += generator.emptyLines(2);
+      bytes += generator.text('Harap bawa struk saat pengambilan.', styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.emptyLines(3);
       bytes += generator.cut();
 
       await bluetooth.writeBytes(Uint8List.fromList(bytes));

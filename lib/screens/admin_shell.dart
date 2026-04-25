@@ -37,28 +37,38 @@ class _AdminShellState extends State<AdminShell> {
     setState(() => _isLoading = true);
     try {
       final shopService = ShopService();
-      final allShops = await shopService.fetchAllShops();
       
-      // Determine which shop to show:
-      // 1. If we already have a shop selected in AppState, keep it.
-      // 2. Otherwise use the shop assigned to the current user.
-      // 3. Fallback to the first shop.
+      // Load shops dengan fallback
+      List<ShopData> allShops;
+      try {
+        allShops = await shopService.fetchAllShops();
+        if (allShops.isEmpty) allShops = [ShopData.defaultShop()];
+      } catch (_) {
+        allShops = [ShopData.defaultShop()];
+      }
+
       String selectedShopId = _appState.currentShop.id;
       if (selectedShopId == '1' && _appState.currentUser?.shopId != null) {
         selectedShopId = _appState.currentUser!.shopId!;
       }
 
-      final currentShop = allShops.firstWhere((s) => s.id == selectedShopId, orElse: () => allShops.isNotEmpty ? allShops.first : ShopData.defaultShop());
+      final currentShop = allShops.firstWhere(
+        (s) => s.id == selectedShopId,
+        orElse: () => allShops.first,
+      );
 
-      final orders = await OrderService().fetchOrders(currentShop.id);
-      final staff = await StaffService().fetchStaff(currentShop.id);
-      final prices = await OrderService().fetchPrices(currentShop.id);
-      
+      // Fetch semua data secara paralel, masing-masing dengan fallback
+      final results = await Future.wait([
+        OrderService().fetchOrders(currentShop.id).catchError((_) => <OrderData>[]),
+        StaffService().fetchStaff(currentShop.id).catchError((_) => <StaffData>[]),
+        OrderService().fetchPrices(currentShop.id).catchError((_) => PriceConfig.defaultPrices()),
+      ]);
+
       if (!mounted) return;
       setState(() {
-        _appState.orders..clear()..addAll(orders);
-        _appState.staffList..clear()..addAll(staff);
-        _appState.prices = prices;
+        _appState.orders..clear()..addAll(results[0] as List<OrderData>);
+        _appState.staffList..clear()..addAll(results[1] as List<StaffData>);
+        _appState.prices = results[2] as List<PriceConfig>;
         _appState.currentShop = currentShop;
         _appState.allShops = allShops;
       });
@@ -177,9 +187,13 @@ class _AdminShellState extends State<AdminShell> {
     return Center(
       child: Container(
         margin: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
-        height: 72, constraints: const BoxConstraints(maxWidth: 520),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(18), blurRadius: 24, offset: const Offset(0, 8))]),
+        height: 68,
+        constraints: const BoxConstraints(maxWidth: 520),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withAlpha(12), blurRadius: 24, offset: const Offset(0, 8))],
+        ),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           _navItem(Icons.dashboard_rounded, 'Beranda', 0),
           _navItem(Icons.local_laundry_service_rounded, 'Pesanan', 1),
@@ -196,12 +210,24 @@ class _AdminShellState extends State<AdminShell> {
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _currentIndex = idx),
-        child: Container(color: Colors.transparent, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(color: sel ? const Color(0xFFDCEDFF) : Colors.transparent, borderRadius: BorderRadius.circular(16)),
-            child: Icon(icon, color: sel ? const Color(0xFF0D47A1) : Colors.grey.shade400, size: 24)),
-          if (sel) ...[const SizedBox(height: 2), Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1)))],
-        ])),
+        child: Container(
+          color: Colors.transparent,
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: sel ? const Color(0xFF4F46E5) : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: sel ? Colors.white : Colors.grey.shade400, size: 22),
+            ),
+            if (sel) ...[
+              const SizedBox(height: 2),
+              Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF4F46E5))),
+            ],
+          ]),
+        ),
       ),
     );
   }

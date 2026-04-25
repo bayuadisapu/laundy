@@ -110,29 +110,37 @@ class _AdminShopManagementPageState extends State<AdminShopManagementPage> {
 
   Widget _buildListView() {
     final shops = widget.appState.allShops;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 64, 24, 120),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      children: [
+        // Header light white
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10, offset: const Offset(0, 2))],
+          ),
+          child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: const Color(0xFF0D47A1), borderRadius: BorderRadius.circular(16)),
-                child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 28),
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.storefront_rounded, color: Color(0xFF4F46E5), size: 22),
               ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Manajemen Outlet', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
-                  Text('${shops.length} Cabang Terdaftar', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
-                ],
-              ),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Manajemen Outlet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+                Text('${shops.length} Cabang Terdaftar', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+              ])),
             ],
           ),
-          const SizedBox(height: 32),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           
           const Text('DAFTAR CABANG / OUTLET', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1.2)),
           const SizedBox(height: 16),
@@ -158,8 +166,11 @@ class _AdminShopManagementPageState extends State<AdminShopManagementPage> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  ),
+],
+);
+}
 
   Widget _shopCard(ShopData shop) {
     final isCurrent = widget.appState.currentShop.id == shop.id;
