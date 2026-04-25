@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/app_data.dart';
 import '../widgets/order_detail_sheet.dart';
+import 'shift_management_screen.dart';
 
 class StaffDashboardView extends StatelessWidget {
   final AppState appState;
@@ -134,6 +135,19 @@ class StaffDashboardView extends StatelessWidget {
                   onPressed: onRefresh,
                   icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B), size: 22),
                   tooltip: 'Refresh',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFFEDD5))),
+                child: IconButton(
+                  onPressed: () {
+                    if (user != null) {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => ShiftManagementScreen(staff: user)));
+                    }
+                  },
+                  icon: const Icon(Icons.schedule_rounded, color: Color(0xFFEA580C), size: 22),
+                  tooltip: 'Manajemen Shift',
                 ),
               ),
               const SizedBox(width: 8),

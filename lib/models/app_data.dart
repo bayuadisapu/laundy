@@ -79,6 +79,52 @@ class PriceConfig {
   ];
 }
 
+// ─── OrderItem: satu baris layanan dalam pesanan ───────────────────────────
+class OrderItem {
+  final String service;
+  final double qty;      // bisa desimal untuk kg, integer untuk pcs/set/menu
+  final String unit;     // 'kg' | 'pcs' | 'set' | 'menu'
+  final int pricePerUnit;
+  final int subtotal;    // qty * pricePerUnit (dibulatkan)
+
+  const OrderItem({
+    required this.service,
+    required this.qty,
+    required this.unit,
+    required this.pricePerUnit,
+    required this.subtotal,
+  });
+
+  factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(
+    service: j['service'] ?? '',
+    qty: (j['qty'] ?? 0).toDouble(),
+    unit: j['unit'] ?? 'kg',
+    pricePerUnit: j['price_per_unit'] ?? 0,
+    subtotal: j['subtotal'] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'service': service,
+    'qty': qty,
+    'unit': unit,
+    'price_per_unit': pricePerUnit,
+    'subtotal': subtotal,
+  };
+
+  OrderItem copyWithQty(double newQty) => OrderItem(
+    service: service,
+    qty: newQty,
+    unit: unit,
+    pricePerUnit: pricePerUnit,
+    subtotal: (pricePerUnit * newQty).round(),
+  );
+
+  /// Label ringkas untuk ditampilkan di list
+  String get displayQty => unit == 'kg'
+      ? '${qty % 1 == 0 ? qty.toInt() : qty} kg'
+      : '${qty.toInt()} $unit';
+}
+
 class OrderData {
   String id;
   String customer;
@@ -105,6 +151,7 @@ class OrderData {
   final String? shopId;
   String paymentStatus;
   DateTime? paymentTime;
+  List<OrderItem> items; // kosong berarti order lama (single-service)
 
   OrderData({
     required this.id,
@@ -132,7 +179,9 @@ class OrderData {
     this.shopId,
     this.paymentStatus = 'Belum Lunas',
     this.paymentTime,
-  }) : orderTime = orderTime ?? DateTime.now();
+    List<OrderItem>? items,
+  })  : orderTime = orderTime ?? DateTime.now(),
+        items = items ?? [];
 
   OrderData copyWith({
     String? id, String? customer, String? phone, String? service,
@@ -146,6 +195,7 @@ class OrderData {
     DateTime? orderTime, DateTime? completedTime, DateTime? pickedUpTime,
     String? shopId,
     String? paymentStatus, DateTime? paymentTime,
+    List<OrderItem>? items,
   }) => OrderData(
     id: id ?? this.id, customer: customer ?? this.customer,
     phone: phone ?? this.phone, service: service ?? this.service,
@@ -163,6 +213,7 @@ class OrderData {
     shopId: shopId ?? this.shopId,
     paymentStatus: paymentStatus ?? this.paymentStatus,
     paymentTime: paymentTime ?? this.paymentTime,
+    items: items ?? List.of(this.items),
   );
 
   factory OrderData.fromJson(Map<String, dynamic> json) => OrderData(
@@ -191,6 +242,9 @@ class OrderData {
     shopId: json['shop_id']?.toString(),
     paymentStatus: json['payment_status'] ?? 'Belum Lunas',
     paymentTime: json['payment_time'] != null ? DateTime.parse(json['payment_time']).toLocal() : null,
+    items: json['items'] != null
+        ? (json['items'] as List).map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList()
+        : [],
   );
 
   Map<String, dynamic> toMap() => {
@@ -211,6 +265,7 @@ class OrderData {
     'shop_id': shopId != null ? int.tryParse(shopId!) : null,
     'payment_status': paymentStatus,
     'payment_time': paymentTime?.toUtc().toIso8601String(),
+    'items': items.isEmpty ? null : items.map((e) => e.toJson()).toList(),
   };
 
   String get formattedDate => DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(orderTime);

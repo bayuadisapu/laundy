@@ -20,47 +20,191 @@ class StaffNewOrderView extends StatefulWidget {
 class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   final _customerCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _weightCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
-  String get _defaultService => widget.appState.prices.isNotEmpty
-      ? widget.appState.prices.first.service
-      : 'Cuci 5kg';
-  late String _selectedService;
+  final List<OrderItem> _items = [];
   DateTime _estimatedDate = DateTime.now().add(const Duration(days: 3));
   DateTime _orderTime = DateTime.now();
   bool _isSaving = false;
   String _paymentStatus = 'Belum Lunas';
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedService = _defaultService;
-  }
+  StaffData? _selectedPicIron;
 
   @override
   void dispose() {
-    _customerCtrl.dispose(); _phoneCtrl.dispose();
-    _weightCtrl.dispose(); _noteCtrl.dispose();
+    _customerCtrl.dispose();
+    _phoneCtrl.dispose();
+    _noteCtrl.dispose();
     super.dispose();
   }
 
-  PriceConfig? get _currentPrice {
-    try { return widget.appState.prices.firstWhere((p) => p.service == _selectedService); }
-    catch (_) { return null; }
-  }
-
-  double get _weight => double.tryParse(_weightCtrl.text) ?? 0;
-  int get _totalPrice => ((_currentPrice?.pricePerUnit ?? 0) * _weight).toInt();
+  int get _totalPrice => _items.fold(0, (s, e) => s + e.subtotal);
   String _fmt(int v) => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(v);
 
-  void _onServiceChanged(String service) {
-    setState(() {
-      _selectedService = service;
-      final cfg = widget.appState.getPriceConfig(service);
-      if (cfg != null) {
-        _estimatedDate = DateTime.now().add(Duration(days: cfg.defaultDays));
-      }
-    });
+  /// Hitung estimasi selesai dari defaultDays terpanjang semua item
+  void _recalcEstimate() {
+    if (_items.isEmpty) return;
+    int maxDays = 0;
+    for (final item in _items) {
+      final cfg = widget.appState.getPriceConfig(item.service);
+      if (cfg != null && cfg.defaultDays > maxDays) maxDays = cfg.defaultDays;
+    }
+    _estimatedDate = DateTime.now().add(Duration(days: maxDays));
+  }
+
+  // ── Tambah / edit item ──────────────────────────────────────────────────
+  void _showAddItemSheet({int? editIndex}) {
+    String? selectedSvc = editIndex != null ? _items[editIndex].service : null;
+    final qtyCtrl = TextEditingController(
+      text: editIndex != null ? (_items[editIndex].qty % 1 == 0
+          ? _items[editIndex].qty.toInt().toString()
+          : _items[editIndex].qty.toString()) : '',
+    );
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setModal) {
+        final priceMap = {for (var p in widget.appState.prices) p.service: p};
+        final cfg = selectedSvc != null ? priceMap[selectedSvc] : null;
+        final unit = cfg?.unit ?? 'kg';
+        final isKg = unit == 'kg';
+        final qty = isKg
+            ? (double.tryParse(qtyCtrl.text) ?? 0)
+            : (double.tryParse(qtyCtrl.text)?.roundToDouble() ?? 0);
+        final subtotal = cfg != null ? (cfg.pricePerUnit * qty).round() : 0;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(2)))),
+              Text(editIndex != null ? 'Edit Layanan' : 'Tambah Layanan',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 16),
+              // ─ Pilih Layanan ─
+              const Text('PILIH LAYANAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 300,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _serviceCategories.entries.map((cat) {
+                      final svcs = cat.value.where((s) => priceMap.containsKey(s)).toList();
+                      if (svcs.isEmpty) return const SizedBox.shrink();
+                      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10, bottom: 6),
+                          child: Text(cat.key, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
+                            color: Colors.grey.shade500)),
+                        ),
+                        Wrap(spacing: 8, runSpacing: 8, children: svcs.map((svc) {
+                          final p = priceMap[svc]!;
+                          final sel = selectedSvc == svc;
+                          return GestureDetector(
+                            onTap: () => setModal(() => selectedSvc = svc),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: sel ? const Color(0xFF1565C0) : const Color(0xFFF1F4F9),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: sel ? const Color(0xFF1565C0) : Colors.grey.shade200),
+                              ),
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(p.service, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                  color: sel ? Colors.white : const Color(0xFF1A1C1E))),
+                                Text('${_fmt(p.pricePerUnit)}/${p.unit}', style: TextStyle(fontSize: 9,
+                                  color: sel ? Colors.white70 : Colors.grey.shade500)),
+                              ]),
+                            ),
+                          );
+                        }).toList()),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // ─ Input qty ─
+              if (cfg != null) ...[
+                Text(isKg ? 'BERAT (kg)' : 'JUMLAH ($unit)',
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(14)),
+                  child: TextField(
+                    controller: qtyCtrl,
+                    keyboardType: isKg
+                        ? const TextInputType.numberWithOptions(decimal: true)
+                        : TextInputType.number,
+                    onChanged: (_) => setModal(() {}),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(isKg ? Icons.scale_outlined : Icons.tag, size: 20, color: Colors.grey.shade400),
+                      hintText: isKg ? 'Contoh: 2.5' : 'Contoh: 3',
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text('Subtotal', style: TextStyle(fontSize: 12, color: Colors.blue.shade700)),
+                    Text(_fmt(subtotal), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.blue.shade800)),
+                  ]),
+                ),
+              ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 52,
+                child: ElevatedButton(
+                  onPressed: (selectedSvc == null || qty <= 0) ? null : () {
+                    final newItem = OrderItem(
+                      service: selectedSvc!,
+                      qty: isKg ? qty : qty.roundToDouble(),
+                      unit: cfg!.unit,
+                      pricePerUnit: cfg.pricePerUnit,
+                      subtotal: subtotal,
+                    );
+                    setState(() {
+                      if (editIndex != null) {
+                        _items[editIndex] = newItem;
+                      } else {
+                        // Jika layanan sudah ada, update qty-nya
+                        final existing = _items.indexWhere((e) => e.service == selectedSvc);
+                        if (existing >= 0) {
+                          _items[existing] = newItem;
+                        } else {
+                          _items.add(newItem);
+                        }
+                      }
+                      _recalcEstimate();
+                    });
+                    Navigator.pop(ctx);
+                    qtyCtrl.dispose();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0), foregroundColor: Colors.white,
+                    elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(editIndex != null ? 'Simpan Perubahan' : 'Tambah ke Pesanan',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ]),
+          ),
+        );
+      }),
+    );
   }
 
   Future<void> _submitOrder() async {
@@ -68,40 +212,40 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
     if (_customerCtrl.text.trim().isEmpty) {
       _snack('Nama pelanggan wajib diisi!', isError: true); return;
     }
-    if (_weightCtrl.text.isEmpty || _weight <= 0) {
-      _snack('Berat / jumlah wajib diisi!', isError: true); return;
+    if (_items.isEmpty) {
+      _snack('Tambahkan minimal satu layanan!', isError: true); return;
     }
-
     setState(() => _isSaving = true);
-
     try {
       final pic = widget.appState.currentUser;
+      // service & weight diisi dari item pertama untuk backward-compat
+      final first = _items.first;
+      final svcLabel = _items.length == 1
+          ? first.service
+          : '${first.service} +${_items.length - 1} lainnya';
       final order = OrderData(
         id: OrderService.generateOrderId(),
         customer: _customerCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
-        service: _selectedService,
-        weight: _weight,
-        pricePerUnit: _currentPrice?.pricePerUnit ?? 0,
+        service: svcLabel,
+        weight: first.qty,
+        pricePerUnit: first.pricePerUnit,
         price: _totalPrice,
         status: 'Proses',
         picId: pic?.id,
         picName: pic?.name ?? 'Staff',
+        picIronId: _selectedPicIron?.id,
+        picIronName: _selectedPicIron?.name,
         notes: _noteCtrl.text.trim(),
         estimatedDate: DateFormat('yyyy-MM-dd').format(_estimatedDate),
         orderTime: _orderTime,
         shopId: widget.appState.currentShop.id,
         paymentStatus: _paymentStatus,
         paymentTime: _paymentStatus == 'Lunas' ? DateTime.now() : null,
+        items: List.of(_items),
       );
-
-      // 1. Simpan ke database dulu
       await widget.onAddOrder(order);
-
-      // 2. Baru cetak struk
       await _printReceipt(order);
-
-      // 3. Reset form & notif sukses
       _resetForm();
       if (mounted) _snack('Pesanan ${order.id} berhasil disimpan!');
     } catch (e) {
@@ -112,13 +256,15 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
   }
 
   void _resetForm() {
-    _customerCtrl.clear(); _phoneCtrl.clear();
-    _weightCtrl.clear(); _noteCtrl.clear();
+    _customerCtrl.clear();
+    _phoneCtrl.clear();
+    _noteCtrl.clear();
     setState(() {
-      _selectedService = _defaultService;
+      _items.clear();
       _orderTime = DateTime.now();
       _estimatedDate = DateTime.now().add(const Duration(days: 3));
       _paymentStatus = 'Belum Lunas';
+      _selectedPicIron = null;
     });
   }
 
@@ -155,7 +301,6 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
     // Fallback: Print PDF
     final pdf = pw.Document();
     final fmt = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
-    final fmtRp = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     for (int copy = 0; copy < 2; copy++) {
       pdf.addPage(pw.Page(
@@ -197,16 +342,28 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
           pw.Align(alignment: pw.Alignment.centerLeft, child: pw.Text(order.notes.isNotEmpty ? order.notes : '-', style: const pw.TextStyle(fontSize: 9))),
           pw.Divider(),
 
-          // LAYANAN
+          // LAYANAN (multi-item)
           pw.SizedBox(height: 4),
-          pw.Align(
-            alignment: pw.Alignment.centerLeft,
-            child: pw.Text(order.service.toUpperCase(), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-          ),
-          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Text('  @${order.weight} ${_currentPrice?.unit ?? "kg"}', style: const pw.TextStyle(fontSize: 10)),
-            pw.Text(fmt.format(order.price), style: const pw.TextStyle(fontSize: 10)),
-          ]),
+          pw.Align(alignment: pw.Alignment.centerLeft,
+            child: pw.Text('LAYANAN', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold))),
+          pw.SizedBox(height: 4),
+          ...order.items.isNotEmpty
+            ? order.items.map((item) => pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Expanded(child: pw.Text(
+                    '${item.service} (${item.displayQty})',
+                    style: const pw.TextStyle(fontSize: 9),
+                  )),
+                  pw.Text(fmt.format(item.subtotal), style: const pw.TextStyle(fontSize: 9)),
+                ],
+              )).toList()
+            : [
+                pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+                  pw.Text('  ${order.service} @${order.weight}', style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text(fmt.format(order.price), style: const pw.TextStyle(fontSize: 9)),
+                ]),
+              ],
           pw.SizedBox(height: 4),
           pw.Divider(borderStyle: pw.BorderStyle.dashed),
 
@@ -254,9 +411,6 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
 
   @override
   Widget build(BuildContext context) {
-    final cfg = _currentPrice;
-    final unit = cfg?.unit ?? 'kg';
-
     return Column(children: [
       // Header light white
       Container(
@@ -320,34 +474,78 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
               ]),
               const SizedBox(height: 16),
               _card(children: [
-                _label('PIC (PENANGGUNG JAWAB)'),
+                _label('KASIR (PENERIMA PESANAN)'),
                 _displayField(Icons.badge_outlined, widget.appState.currentUser?.name ?? 'Staff (Auto)'),
-              ]),
-              const SizedBox(height: 16),
-              _card(children: [
-                _label('JENIS LAYANAN *'),
-                const SizedBox(height: 8),
-                _buildServiceDropdown(),
-              ]),
-              const SizedBox(height: 16),
-              _card(children: [
-                _label('BERAT / JUMLAH ($unit) *'),
-                _textField(
-                  _weightCtrl,
-                  Icons.scale_outlined,
-                  unit == 'kg' ? 'Contoh: 3.5 kg' : unit == 'pcs' ? 'Jumlah pcs/item' : 'Jumlah $unit',
-                  type: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState(() {}),
-                ),
                 const SizedBox(height: 16),
-                _label('ESTIMASI SELESAI'),
-                GestureDetector(
-                  onTap: () async {
-                    final d = await showDatePicker(context: context, initialDate: _estimatedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 30)));
-                    if (d != null) setState(() => _estimatedDate = d);
-                  },
-                  child: _displayField(Icons.event_outlined, DateFormat('dd MMMM yyyy', 'id_ID').format(_estimatedDate)),
-                ),
+                _label('PIC SETRIKA'),
+                _buildPicIronDropdown(),
+              ]),
+              const SizedBox(height: 16),
+              _card(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _label('DAFTAR LAYANAN *'),
+                  TextButton.icon(
+                    onPressed: () => _showAddItemSheet(),
+                    icon: const Icon(Icons.add_circle_rounded, size: 18, color: Color(0xFF1565C0)),
+                    label: const Text('Tambah', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1565C0))),
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  ),
+                ]),
+                if (_items.isEmpty)
+                  GestureDetector(
+                    onTap: () => _showAddItemSheet(),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F4F9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF1565C0).withAlpha(40), width: 1.5,
+                          style: BorderStyle.solid),
+                      ),
+                      child: Column(children: [
+                        Icon(Icons.add_shopping_cart_rounded, size: 32, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        Text('Tap untuk menambah layanan', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+                      ]),
+                    ),
+                  )
+                else
+                  ...(_items.asMap().entries.map((e) {
+                    final i = e.key;
+                    final item = e.value;
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(children: [
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(item.service, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${item.displayQty}  ×  ${_fmt(item.pricePerUnit)}/${item.unit}',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          ),
+                        ])),
+                        Text(_fmt(item.subtotal),
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1565C0))),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => _showAddItemSheet(editIndex: i),
+                          child: const Icon(Icons.edit_outlined, size: 18, color: Colors.grey),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() { _items.removeAt(i); _recalcEstimate(); }),
+                          child: const Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFD32F2F)),
+                        ),
+                      ]),
+                    );
+                  })),
               ]),
               const SizedBox(height: 16),
               _card(children: [
@@ -372,7 +570,7 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('TOTAL BIAYA', style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold)),
                     Text(_fmt(_totalPrice), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
-                    Text('${cfg != null ? _fmt(cfg.pricePerUnit) : "-"}/$unit x $_weight $unit', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                    Text('${_items.length} layanan dipilih', style: TextStyle(fontSize: 11, color: Colors.white60)),
                   ]),
                   const Icon(Icons.receipt_long_rounded, color: Colors.white38, size: 40),
                 ]),
@@ -408,41 +606,51 @@ class _StaffNewOrderViewState extends State<StaffNewOrderView> {
     '⚡ Add On': ['Add On: Express'],
   };
 
-  Widget _buildServiceDropdown() {
-    final priceMap = { for (var p in widget.appState.prices) p.service: p };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _serviceCategories.entries.map((cat) {
-        final services = cat.value.where((s) => priceMap.containsKey(s)).toList();
-        if (services.isEmpty) return const SizedBox.shrink();
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 6),
-            child: Text(cat.key, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 0.5)),
-          ),
-          Wrap(spacing: 8, runSpacing: 8, children: services.map((svc) {
-            final p = priceMap[svc]!;
-            final sel = _selectedService == svc;
-            return GestureDetector(
-              onTap: () => _onServiceChanged(svc),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                decoration: BoxDecoration(
-                  color: sel ? const Color(0xFF1565C0) : const Color(0xFFF1F4F9),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: sel ? const Color(0xFF1565C0) : Colors.grey.shade200, width: 1.5),
-                  boxShadow: sel ? [BoxShadow(color: const Color(0xFF1565C0).withAlpha(60), blurRadius: 8, offset: const Offset(0,3))] : [],
+  // _buildServiceDropdown digantikan oleh _showAddItemSheet (bottom sheet multi-item)
+
+  Widget _buildPicIronDropdown() {
+    final staffList = widget.appState.staffList;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F9),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<StaffData?>(
+          value: _selectedPicIron,
+          isExpanded: true,
+          hint: Row(children: [
+            Icon(Icons.iron_outlined, size: 20, color: Colors.grey.shade400),
+            const SizedBox(width: 12),
+            Text('Pilih penyetrika...', style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
+          ]),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF1565C0)),
+          items: [
+            DropdownMenuItem<StaffData?>(
+              value: null,
+              child: Row(children: [
+                Icon(Icons.person_off_outlined, size: 20, color: Colors.grey.shade400),
+                const SizedBox(width: 12),
+                Text('Belum ditentukan', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+              ]),
+            ),
+            ...staffList.where((s) => s.isActive).map((s) => DropdownMenuItem<StaffData?>(
+              value: s,
+              child: Row(children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundImage: NetworkImage(s.imgUrl.isNotEmpty ? s.imgUrl : 'https://i.pravatar.cc/150?u=${s.email}'),
+                  backgroundColor: Colors.grey.shade200,
                 ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(p.service, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: sel ? Colors.white : const Color(0xFF1A1C1E))),
-                  Text('${_fmt(p.pricePerUnit)}/${p.unit}', style: TextStyle(fontSize: 10, color: sel ? Colors.white70 : Colors.grey.shade500)),
-                ]),
-              ),
-            );
-          }).toList()),
-        ]);
-      }).toList(),
+                const SizedBox(width: 10),
+                Text(s.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              ]),
+            )),
+          ],
+          onChanged: (v) => setState(() => _selectedPicIron = v),
+        ),
+      ),
     );
   }
 

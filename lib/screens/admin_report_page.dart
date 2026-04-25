@@ -139,9 +139,6 @@ class _AdminReportPageState extends State<AdminReportPage> {
   }
 
   double get _totalIncome => _filteredTransactions.fold(0.0, (sum, o) => sum + o.price);
-  double get _operationalCost => _totalIncome * 0.43; // Simulated 43% operational cost
-  double get _netProfit => _totalIncome - _operationalCost;
-  double get _profitMargin => _totalIncome > 0 ? (_netProfit / _totalIncome) * 100 : 0;
 
   String _fmt(double v) => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(v);
 
@@ -161,15 +158,11 @@ class _AdminReportPageState extends State<AdminReportPage> {
       sheet.merge(xl.CellIndex.indexByString('A1'), xl.CellIndex.indexByString('H1'));
       sheet.cell(xl.CellIndex.indexByString('A2')).value = xl.TextCellValue('Periode: $_selectedRange | Dicetak: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}');
 
-      sheet.cell(xl.CellIndex.indexByString('A4')).value = xl.TextCellValue('LABA RUGI');
+      sheet.cell(xl.CellIndex.indexByString('A4')).value = xl.TextCellValue('PEMASUKAN');
       sheet.cell(xl.CellIndex.indexByString('A4')).cellStyle = xl.CellStyle(bold: true, fontSize: 13);
       sheet.cell(xl.CellIndex.indexByString('A5')).value = xl.TextCellValue('Total Pemasukan:');
       sheet.cell(xl.CellIndex.indexByString('B5')).value = xl.TextCellValue(_fmt(_totalIncome));
-      sheet.cell(xl.CellIndex.indexByString('A6')).value = xl.TextCellValue('Biaya Operasional:');
-      sheet.cell(xl.CellIndex.indexByString('B6')).value = xl.TextCellValue(_fmt(_operationalCost));
-      sheet.cell(xl.CellIndex.indexByString('A7')).value = xl.TextCellValue('Laba Bersih:');
-      sheet.cell(xl.CellIndex.indexByString('B7')).value = xl.TextCellValue(_fmt(_netProfit));
-      sheet.cell(xl.CellIndex.indexByString('A7')).cellStyle = xl.CellStyle(bold: true);
+      sheet.cell(xl.CellIndex.indexByString('A5')).cellStyle = xl.CellStyle(bold: true);
 
       final headers = ['No', 'Barcode', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status', 'Status Bayar', 'PIC'];
       for (int i = 0; i < headers.length; i++) {
@@ -218,15 +211,12 @@ class _AdminReportPageState extends State<AdminReportPage> {
         pw.Header(level: 0, child: pw.Text('Laporan Keuangan LaundryKu', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold))),
         pw.Text('Periode: $_selectedRange | Dicetak: ${DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(DateTime.now())}'),
         pw.SizedBox(height: 20),
-        pw.Text('LABA RUGI', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text('PEMASUKAN', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 8),
         pw.TableHelper.fromTextArray(
           headers: ['Keterangan', 'Jumlah'],
           data: [
             ['Total Pemasukan', _fmt(_totalIncome)],
-            ['Biaya Operasional', _fmt(_operationalCost)],
-            ['Laba Bersih', _fmt(_netProfit)],
-            ['Margin Keuntungan', '${_profitMargin.toStringAsFixed(1)}%'],
           ],
           headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
           cellAlignment: pw.Alignment.centerLeft,
@@ -268,7 +258,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Laporan Keuangan', style: TextStyle(fontSize: isPhone ? 22 : 26, fontWeight: FontWeight.bold, color: const Color(0xFF1A1C2E))),
-                    Text('Analisis laba rugi dan rincian transaksi.', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+                    Text('Pemasukan dan rincian transaksi.', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
                     const SizedBox(height: 24),
                     _buildPeriodFilter(),
                     const SizedBox(height: 24),
@@ -398,44 +388,21 @@ class _AdminReportPageState extends State<AdminReportPage> {
   }
 
   Widget _buildPnLCards(bool isPhone) {
-    return Column(
-      children: [
-        Row(children: [
-          Expanded(child: _pnlCard('Total Pemasukan', _fmt(_totalIncome), Icons.trending_up_rounded, const Color(0xFFE8F5E9), const Color(0xFF10B981))),
-          const SizedBox(width: 12),
-          Expanded(child: _pnlCard('Biaya Operasional', _fmt(_operationalCost), Icons.trending_down_rounded, const Color(0xFFFFEBEE), const Color(0xFFEF4444))),
-        ]),
-        const SizedBox(height: 12),
-        // Laba bersih card — white with indigo border
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF4F46E5).withAlpha(30)),
-            boxShadow: [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(5), blurRadius: 15, offset: const Offset(0, 5))],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('LABA BERSIH', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade400, letterSpacing: 1.1)),
-                const SizedBox(height: 4),
-                FittedBox(fit: BoxFit.scaleDown,
-                  child: Text(_fmt(_netProfit), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)))),
-              ])),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(color: const Color(0xFF4F46E5), borderRadius: BorderRadius.circular(12)),
-                child: Text('${_profitMargin.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    final txCount = _filteredTransactions.length;
+    final avgOrder = txCount > 0 ? _totalIncome / txCount : 0.0;
+    return Row(children: [
+      Expanded(child: _pnlCard(
+        'Total Pemasukan', _fmt(_totalIncome),
+        Icons.trending_up_rounded,
+        const Color(0xFFE8F5E9), const Color(0xFF10B981),
+      )),
+      const SizedBox(width: 12),
+      Expanded(child: _pnlCard(
+        'Rata-rata / Order', _fmt(avgOrder),
+        Icons.receipt_outlined,
+        const Color(0xFFE3F2FD), const Color(0xFF1565C0),
+      )),
+    ]);
   }
 
   Widget _pnlCard(String label, String value, IconData icon, Color bg, Color fg) {

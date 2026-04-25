@@ -256,9 +256,19 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
                         ])),
                         const SizedBox(width: 20),
                         Expanded(child: _infoCard(Icons.local_laundry_service_outlined, 'LAYANAN', [
-                          Text(order.service, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
-                          const SizedBox(height: 6),
-                          Text('${order.weight} kg', style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                          if (order.items.isNotEmpty) ...[
+                            ...order.items.map((item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                                Expanded(child: Text(item.service, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1C1E)))),
+                                Text(item.displayQty, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                              ]),
+                            )),
+                          ] else ...[
+                            Text(order.service, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
+                            const SizedBox(height: 4),
+                            Text('${order.weight} kg', style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                          ],
                         ])),
                       ]),
                       const SizedBox(height: 20),
