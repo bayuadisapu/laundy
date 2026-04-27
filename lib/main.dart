@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/login_page.dart';
@@ -12,7 +13,6 @@ final AppState globalAppState = AppState(orders: [], staffList: []);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Font is handled by ThemeData natively
   await Supabase.initialize(url: SupabaseConstants.url, anonKey: SupabaseConstants.anonKey);
   await initializeDateFormatting('id_ID', null);
   runApp(const LaundryKuApp());
@@ -27,7 +27,7 @@ class LaundryKuApp extends StatelessWidget {
       title: 'LaundryKu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'Roboto', // Forcing Roboto as primary font
+        textTheme: GoogleFonts.outfitTextTheme(Theme.of(context).textTheme),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E88E5), primary: const Color(0xFF1E88E5)),
         useMaterial3: true,
       ),

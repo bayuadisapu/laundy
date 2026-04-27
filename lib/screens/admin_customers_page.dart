@@ -146,11 +146,27 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
             const SizedBox(height: 12),
             Text('Tidak ada pelanggan ditemukan', style: TextStyle(color: Colors.grey.shade400)),
           ]))
-        : ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-            itemCount: customers.length,
-            itemBuilder: (ctx, i) => _buildCustomerCard(customers[i], i + 1),
-          )),
+        : LayoutBuilder(builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 900;
+            if (isWide) {
+              return GridView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 0,
+                  mainAxisExtent: 110,
+                ),
+                itemCount: customers.length,
+                itemBuilder: (ctx, i) => _buildCustomerCard(customers[i], i + 1),
+              );
+            }
+            return ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+              itemCount: customers.length,
+              itemBuilder: (ctx, i) => _buildCustomerCard(customers[i], i + 1),
+            );
+          })),
     ]);
   }
 

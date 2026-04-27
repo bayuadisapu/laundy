@@ -16,13 +16,15 @@ import 'audit_logs_screen.dart';
 class AdminDashboardPage extends StatefulWidget {
   final AppState appState;
   final VoidCallback onRefresh;
-  const AdminDashboardPage({super.key, required this.appState, required this.onRefresh});
+  final VoidCallback? onAttentionTap;
+  const AdminDashboardPage({super.key, required this.appState, required this.onRefresh, this.onAttentionTap});
   @override
   State<AdminDashboardPage> createState() => _AdminDashboardPageState();
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   String _period = 'Hari Ini';
+  DateTimeRange? _customRange;
   final _periods = ['Hari Ini', 'Minggu Ini', 'Bulan Ini', 'Tahun Ini'];
 
   String _fmt(int v) => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(v);
@@ -36,6 +38,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return DateTimeRange(start: DateTime(weekStart.year, weekStart.month, weekStart.day), end: now);
       case 'Bulan Ini': return DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
       case 'Tahun Ini': return DateTimeRange(start: DateTime(now.year, 1, 1), end: now);
+      case 'Kustom': return _customRange ?? DateTimeRange(start: DateTime(now.year, now.month, now.day), end: now);
       default: return DateTimeRange(start: DateTime(now.year, now.month, now.day), end: now);
     }
   }
@@ -179,6 +182,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             child: CircleAvatar(
               radius: 22,
               backgroundImage: user?.imgUrl != null ? NetworkImage(user!.imgUrl!) : null,
+              onBackgroundImageError: (_, __) {}, // Prevent black error box if image fails
               backgroundColor: const Color(0xFFEEF2FF),
               child: user?.imgUrl == null ? const Icon(Icons.person_rounded, color: Color(0xFF4F46E5), size: 22) : null,
             ),
@@ -220,8 +224,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ]),
             );
           }),
-          const SizedBox(width: 8),
-          _HeaderBtn(icon: Icons.refresh_rounded, onTap: widget.onRefresh),
         ]),
       ),
 
@@ -240,25 +242,72 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             // Period filter — pill minimal
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Row(children: _periods.map((p) {
-                final sel = _period == p;
-                return GestureDetector(
-                  onTap: () => setState(() => _period = p),
+              child: Row(children: [
+                ..._periods.map((p) {
+                  final sel = _period == p;
+                  return GestureDetector(
+                    onTap: () => setState(() { _period = p; _customRange = null; }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: sel ? const Color(0xFF4F46E5) : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: sel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0)),
+                        boxShadow: sel ? [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(40), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                      ),
+                      child: Text(p, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                        color: sel ? Colors.white : const Color(0xFF64748B))),
+                    ),
+                  );
+                }),
+                GestureDetector(
+                  onTap: () async {
+                    final res = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(primary: Color(0xFF4F46E5), onPrimary: Colors.white, onSurface: Colors.black),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (res != null) {
+                      setState(() {
+                        _period = 'Kustom';
+                        _customRange = res;
+                      });
+                    }
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: sel ? const Color(0xFF4F46E5) : Colors.white,
+                      color: _period == 'Kustom' ? const Color(0xFF4F46E5) : Colors.white,
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: sel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0)),
-                      boxShadow: sel ? [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(40), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                      border: Border.all(color: _period == 'Kustom' ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0)),
+                      boxShadow: _period == 'Kustom' ? [BoxShadow(color: const Color(0xFF4F46E5).withAlpha(40), blurRadius: 8, offset: const Offset(0, 3))] : null,
                     ),
-                    child: Text(p, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                      color: sel ? Colors.white : const Color(0xFF64748B))),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_month_rounded, size: 14, color: _period == 'Kustom' ? Colors.white : const Color(0xFF64748B)),
+                        const SizedBox(width: 6),
+                        Text(
+                          _period == 'Kustom' && _customRange != null
+                              ? '${DateFormat('dd/MM/yy').format(_customRange!.start)} - ${DateFormat('dd/MM/yy').format(_customRange!.end)}'
+                              : 'Kustom',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _period == 'Kustom' ? Colors.white : const Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }).toList()),
+                ),
+              ]),
             ),
             const SizedBox(height: 20),
 
@@ -328,27 +377,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final overdueSelesai = widget.appState.orders.where((o) => o.status == 'Selesai' && now.difference(o.completedTime ?? o.orderTime).inHours > 24).length;
     final total = overdueProses + overdueSelesai;
     if (total == 0) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFFF6F00), Color(0xFFF57C00)]),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: widget.onAttentionTap,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFFFF6F00).withAlpha(60), blurRadius: 12, offset: const Offset(0, 6))],
-      ),
-      child: Row(children: [
-        const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
-        const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('⚠️ $total Pesanan Butuh Perhatian!', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)),
-          const SizedBox(height: 2),
-          Text(
-            '${overdueProses > 0 ? "$overdueProses proses >3 hari" : ""}${overdueProses > 0 && overdueSelesai > 0 ? " · " : ""}${overdueSelesai > 0 ? "$overdueSelesai belum diambil >24 jam" : ""}',
-            style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(220)),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFFFF6F00), Color(0xFFF57C00)]),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: const Color(0xFFFF6F00).withAlpha(60), blurRadius: 12, offset: const Offset(0, 6))],
           ),
-        ])),
-        const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
-      ]),
+          child: Row(children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('⚠️ $total Pesanan Butuh Perhatian!', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)),
+              const SizedBox(height: 2),
+              Text(
+                '${overdueProses > 0 ? "$overdueProses proses >3 hari" : ""}${overdueProses > 0 && overdueSelesai > 0 ? " · " : ""}${overdueSelesai > 0 ? "$overdueSelesai belum diambil >24 jam" : ""}',
+                style: TextStyle(fontSize: 11, color: Colors.white.withAlpha(220)),
+              ),
+            ])),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+          ]),
+        ),
+      ),
     );
   }
 
@@ -404,8 +459,45 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       }
       interval = 5;
       xLabel = 'Tanggal';
+    } else if (_period == 'Kustom' && _customRange != null) {
+      chartTitle = 'Pendapatan Kustom';
+      final days = _customRange!.end.difference(_customRange!.start).inDays;
+      if (days == 0) {
+        // Hourly
+        for (int i = 0; i < 24; i++) {
+          final hour = DateTime(_customRange!.start.year, _customRange!.start.month, _customRange!.start.day, i);
+          dataMap[DateFormat('HH').format(hour)] = 0.0;
+        }
+        for (final o in widget.appState.orders) {
+          if (o.status == 'Sudah Diambil' && o.pickedUpTime != null && 
+              o.pickedUpTime!.isAfter(_customRange!.start.subtract(const Duration(minutes: 1))) && 
+              o.pickedUpTime!.isBefore(_customRange!.end.add(const Duration(days: 1)))) {
+            final key = DateFormat('HH').format(o.pickedUpTime!);
+            if (dataMap.containsKey(key)) dataMap[key] = (dataMap[key] ?? 0) + o.price;
+          }
+        }
+        interval = 4;
+        xLabel = 'Jam';
+      } else {
+        // Daily
+        for (int i = 0; i <= days; i++) {
+          final date = _customRange!.start.add(Duration(days: i));
+          dataMap[DateFormat('dd/MM').format(date)] = 0.0;
+        }
+        for (final o in widget.appState.orders) {
+          if (o.status == 'Sudah Diambil' && o.pickedUpTime != null && 
+              o.pickedUpTime!.isAfter(_customRange!.start.subtract(const Duration(minutes: 1))) && 
+              o.pickedUpTime!.isBefore(_customRange!.end.add(const Duration(days: 1)))) {
+            final key = DateFormat('dd/MM').format(o.pickedUpTime!);
+            if (dataMap.containsKey(key)) dataMap[key] = (dataMap[key] ?? 0) + o.price;
+          }
+        }
+        interval = (days / 6).ceil().toDouble().toInt();
+        if (interval < 1) interval = 1;
+        xLabel = 'Tanggal';
+      }
     } else {
-      chartTitle = 'Tren Pendapatan Tahunan';
+      chartTitle = 'Pendapatan Tahunan';
       for (int i = 1; i <= 12; i++) {
         dataMap[i.toString().padLeft(2, '0')] = 0.0;
       }
@@ -431,11 +523,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(chartTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1A1C2E))),
+          Expanded(
+            child: Text(chartTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1A1C2E)), maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(color: const Color(0xFF0D47A1).withAlpha(15), borderRadius: BorderRadius.circular(8)),
-            child: Text('dalam ribuan Rp', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF0D47A1))),
+            child: const Text('dalam ribuan Rp', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF0D47A1))),
           ),
         ]),
         const SizedBox(height: 24),
@@ -446,10 +541,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               touchTooltipData: LineTouchTooltipData(
                 getTooltipColor: (_) => const Color(0xFF1A1C2E),
                 getTooltipItems: (touchedSpots) {
-                  return touchedSpots.map((s) => LineTooltipItem(
-                    '${dataMap.keys.elementAt(s.x.toInt())}\nRp ${NumberFormat('#,###').format(s.y * 1000)}',
-                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                  )).toList();
+                  return touchedSpots.map((s) {
+                    final idx = s.x.toInt();
+                    if (idx < 0 || idx >= dataMap.length) return null;
+                    return LineTooltipItem(
+                      '${dataMap.keys.elementAt(idx)}\nRp ${NumberFormat('#,###').format(s.y * 1000)}',
+                      const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                    );
+                  }).whereType<LineTooltipItem>().toList();
                 },
               ),
             ),

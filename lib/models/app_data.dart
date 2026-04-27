@@ -399,6 +399,17 @@ class AppState {
       orders.where((o) => o.status == 'Sudah Diambil' && o.pickedUpTime != null &&
           !o.pickedUpTime!.isBefore(start) && o.pickedUpTime!.isBefore(end)).length;
 
+  /// Total nilai kain yang masuk (semua order hari ini by orderTime, tanpa filter status)
+  int fabricReceivedForPeriod(DateTime start, DateTime end) =>
+      orders.where((o) =>
+          !o.orderTime.isBefore(start) && o.orderTime.isBefore(end))
+          .fold(0, (s, o) => s + o.price);
+
+  /// Jumlah pesanan masuk di periode
+  int ordersReceivedForPeriod(DateTime start, DateTime end) =>
+      orders.where((o) =>
+          !o.orderTime.isBefore(start) && o.orderTime.isBefore(end)).length;
+
   PriceConfig? getPriceConfig(String service) {
     try { return prices.firstWhere((p) => p.service == service); }
     catch (_) { return null; }

@@ -63,7 +63,7 @@ class AdminMoreMenuPage extends StatelessWidget {
           
           const SizedBox(height: 60),
           Center(
-            child: Text('LaundryKu Premium v1.2.0', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontWeight: FontWeight.bold)),
+            child: Text('LaundryKu', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontWeight: FontWeight.bold)),
           ),
             ],
           ),

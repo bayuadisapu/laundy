@@ -395,79 +395,95 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
 
                       const SizedBox(height: 32),
 
-                      // Print Receipt CTA
+                      // Aksi Utama: Cetak Struk
                       SizedBox(
-                        width: double.infinity, height: 64,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: const LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1976D2)]),
-                            boxShadow: [BoxShadow(color: const Color(0xFF0D47A1).withAlpha(40), blurRadius: 15, offset: const Offset(0, 8))],
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: _isPrinting ? null : _handlePrint,
-                            icon: _isPrinting 
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Icon(Icons.print_rounded, size: 22),
-                            label: Text(_isPrinting ? 'MENCETAK...' : 'CETAK STRUK SEKARANG', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 0.5)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent, foregroundColor: Colors.white, 
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            ),
+                        width: double.infinity, height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed: _isPrinting ? null : _handlePrint,
+                          icon: _isPrinting 
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.print_rounded, size: 18),
+                          label: Text(_isPrinting ? 'Mencetak...' : 'Cetak Struk', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5), 
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                      if (order.phone.isNotEmpty) ...[SizedBox(
-                        width: double.infinity, height: 60,
-                        child: ElevatedButton.icon(
-                          onPressed: () { Navigator.pop(context); _sendWhatsApp(); },
-                          icon: const Icon(Icons.chat_rounded, size: 20),
-                          label: Text(
-                            order.status == 'Selesai' ? 'Beritahu Cucian Siap Diambil' : 'Hubungi via WhatsApp',
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                      // Aksi Komunikasi: WhatsApp
+                      if (order.phone.isNotEmpty) ...[
+                        SizedBox(
+                          width: double.infinity, height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed: () { Navigator.pop(context); _sendWhatsApp(); },
+                            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                            label: Text(
+                              order.status == 'Selesai' ? 'Beritahu Siap Diambil' : 'Hubungi WhatsApp',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE8F5E9),
+                              foregroundColor: const Color(0xFF2E7D32), 
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25D366),
-                            foregroundColor: Colors.white, elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
-                        ),
-                      ), const SizedBox(height: 16)],
+                        ), 
+                        const SizedBox(height: 12),
+                      ],
 
+                      // Aksi Admin: Void / Undo / Delete
                       if (widget.isAdmin) ...[
                         Row(children: [
                           if (order.status != 'Sudah Diambil')
-                            Expanded(child: Container(
-                              height: 64,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                gradient: const LinearGradient(colors: [Color(0xFFB71C1C), Color(0xFFD32F2F)]),
-                                boxShadow: [BoxShadow(color: const Color(0xFFD32F2F).withAlpha(50), blurRadius: 20, offset: const Offset(0, 8))],
-                              ),
+                            Expanded(child: SizedBox(
+                              height: 48,
                               child: ElevatedButton.icon(
                                 onPressed: _handleVoid,
-                                icon: const Icon(Icons.block_rounded, size: 20),
-                                label: const Text('VOID', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 16)),
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, foregroundColor: Colors.white, shadowColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                                icon: const Icon(Icons.block_rounded, size: 16),
+                                label: const Text('Void', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFEBEE), 
+                                  foregroundColor: const Color(0xFFC62828), 
+                                  elevation: 0, 
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
                               ),
                             )),
-                          if (order.status != 'Sudah Diambil') const SizedBox(width: 16),
                           if (order.status == 'Sudah Diambil')
-                            Expanded(child: SizedBox(height: 64, child: OutlinedButton.icon(
-                              onPressed: _confirmCancelPickup,
-                              icon: const Icon(Icons.history_rounded, size: 20),
-                              label: const Text('Undo Checkout', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                              style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFE65100), side: const BorderSide(color: Color(0xFFE65100), width: 2.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                            ))),
-                          Expanded(child: SizedBox(height: 64, child: TextButton.icon(
-                            onPressed: _confirmDelete,
-                            icon: const Icon(Icons.delete_sweep_rounded, size: 20, color: Colors.black38),
-                            label: const Text('Hapus', style: TextStyle(color: Colors.black38, fontWeight: FontWeight.w700, fontSize: 16)),
-                            style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                          ))),
+                            Expanded(child: SizedBox(
+                              height: 48, 
+                              child: ElevatedButton.icon(
+                                onPressed: _confirmCancelPickup,
+                                icon: const Icon(Icons.history_rounded, size: 16),
+                                label: const Text('Batal Checkout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFFF3E0), 
+                                  foregroundColor: const Color(0xFFE65100), 
+                                  elevation: 0, 
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                              ),
+                            )),
+                          const SizedBox(width: 12), // Jarak yang selalu ada sebelum tombol Hapus
+                          Expanded(child: SizedBox(
+                            height: 48, 
+                            child: ElevatedButton.icon(
+                              onPressed: _confirmDelete,
+                              icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                              label: const Text('Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF1F5F9), 
+                                foregroundColor: const Color(0xFF475569), 
+                                elevation: 0, 
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                            ),
+                          )),
                         ]),
                       ],
                     ]),

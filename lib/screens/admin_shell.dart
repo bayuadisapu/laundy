@@ -113,7 +113,7 @@ class _AdminShellState extends State<AdminShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      AdminDashboardPage(appState: _appState, onRefresh: _refresh),
+      AdminDashboardPage(appState: _appState, onRefresh: _refresh, onAttentionTap: () => setState(() => _currentIndex = 1)),
       AdminOrdersPage(appState: _appState, onAddOrder: _addOrder, onRefresh: _refresh, onDeleteOrder: _deleteOrder, onUpdateOrder: _updateOrder, onCancelPickup: _cancelPickup),
       HistoryPage(appState: _appState, isAdmin: true, onRefresh: _refresh, onUpdateOrder: _updateOrder, onDeleteOrder: _deleteOrder, onCancelPickup: _cancelPickup),
       AdminCustomersPage(appState: _appState),
@@ -157,19 +157,39 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   Widget _buildNavRail() {
+    final isWide = MediaQuery.of(context).size.width >= 1024;
     return NavigationRail(
       selectedIndex: _currentIndex,
       onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-      labelType: NavigationRailLabelType.all,
+      extended: isWide,
+      labelType: isWide ? NavigationRailLabelType.none : NavigationRailLabelType.all,
       backgroundColor: Colors.white,
       selectedIconTheme: const IconThemeData(color: Color(0xFF0D47A1), size: 28),
       unselectedIconTheme: IconThemeData(color: Colors.grey.shade400, size: 24),
       selectedLabelTextStyle: const TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold, fontSize: 12),
       unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade600, fontSize: 11),
       indicatorColor: const Color(0xFFDCEDFF),
+      minExtendedWidth: 180, // Perkecil lebar agar tidak terlalu kosong
       leading: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Image.network('https://i.imgur.com/89kR6K8.png', width: 40, height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.local_laundry_service_rounded, color: Color(0xFF0D47A1), size: 32)),
+        padding: EdgeInsets.symmetric(vertical: 24, horizontal: isWide ? 12 : 0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: isWide ? MainAxisAlignment.start : MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.local_laundry_service_rounded, color: Colors.white, size: 20),
+            ),
+            if (isWide) ...[
+              const SizedBox(width: 12),
+              const Text('LaundryKu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            ],
+          ],
+        ),
       ),
       destinations: const [
         NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Dashboard')),

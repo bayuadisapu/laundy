@@ -106,6 +106,21 @@ class OrderService {
     await _supabase.from('price_config').upsert(data, onConflict: 'shop_id,service');
   }
 
+  Future<void> addPrice(String service, int pricePerUnit, {String unit = 'kg', int defaultDays = 2, String? shopId}) async {
+    final data = <String, dynamic>{
+      'service': service,
+      'price_per_unit': pricePerUnit,
+      'unit': unit,
+      'default_days': defaultDays,
+    };
+    if (shopId != null) data['shop_id'] = int.parse(shopId);
+    await _supabase.from('price_config').insert(data);
+  }
+
+  Future<void> deletePrice(int id) async {
+    await _supabase.from('price_config').delete().eq('id', id);
+  }
+
   static String generateOrderId() {
     final now = DateTime.now();
     final d = now.year.toString().substring(2) +

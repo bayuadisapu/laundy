@@ -82,10 +82,6 @@ class PrinterService {
       // ===== HEADER =====
       bytes += generator.text(settings.name,
           styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
-      if (settings.address.isNotEmpty)
-        bytes += generator.text(settings.address, styles: const PosStyles(align: PosAlign.center));
-      if (settings.phone.isNotEmpty)
-        bytes += generator.text('WA: ${settings.phone}', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.text(sepLight, styles: const PosStyles(align: PosAlign.center));
 
       // ===== NAMA PELANGGAN BESAR (seperti nota referensi) =====
@@ -135,9 +131,12 @@ class PrinterService {
         bytes += generator.emptyLines(1);
         for (final item in order.items) {
           bytes += generator.text(item.service.toUpperCase(), styles: const PosStyles(bold: true));
+          final qtyLabel = item.unit == 'kg'
+              ? '${item.qty % 1 == 0 ? item.qty.toInt() : item.qty} kg'
+              : '${item.qty.toInt()} ${item.unit}';
           bytes += generator.row([
-            PosColumn(text: '  ${item.displayQty}', width: 7),
-            PosColumn(text: fmt.format(item.subtotal), width: 5, styles: const PosStyles(align: PosAlign.right)),
+            PosColumn(text: '  $qtyLabel x ${fmt.format(item.pricePerUnit)}', width: 7),
+            PosColumn(text: fmt.format(item.subtotal), width: 5, styles: const PosStyles(align: PosAlign.right, bold: true)),
           ]);
         }
       } else {
@@ -180,11 +179,6 @@ class PrinterService {
       final List<int> barData = [123, 66, ...order.id.codeUnits]; 
       bytes += generator.barcode(Barcode.code128(barData), height: 60);
       bytes += generator.text(order.id, styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.emptyLines(1);
-
-      // ===== FOOTER =====
-      bytes += generator.text(settings.receiptFooter, styles: const PosStyles(align: PosAlign.center, bold: true));
-      bytes += generator.text('Harap bawa struk saat pengambilan.', styles: const PosStyles(align: PosAlign.center));
       bytes += generator.emptyLines(3);
       bytes += generator.cut();
 

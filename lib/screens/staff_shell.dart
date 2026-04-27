@@ -137,26 +137,86 @@ class _StaffShellState extends State<StaffShell> {
   }
 
   Widget _buildNavRail() {
-    return NavigationRail(
-      selectedIndex: _currentIndex,
-      onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-      labelType: NavigationRailLabelType.all,
-      backgroundColor: Colors.white,
-      selectedIconTheme: const IconThemeData(color: Color(0xFF4F46E5), size: 28),
-      unselectedIconTheme: IconThemeData(color: Colors.grey.shade400, size: 24),
-      selectedLabelTextStyle: const TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.w900, fontSize: 11),
-      unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-      indicatorColor: const Color(0xFFEEF2FF),
-      leading: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child: Icon(Icons.local_laundry_service_rounded, color: Color(0xFF4F46E5), size: 32),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: Color(0xFFEEF2FF), width: 1.5)),
       ),
-      destinations: const [
-        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Beranda')),
-        NavigationRailDestination(icon: Icon(Icons.add_circle_outline_rounded), label: Text('Input')),
-        NavigationRailDestination(icon: Icon(Icons.qr_code_scanner_rounded), label: Text('Scan')),
-        NavigationRailDestination(icon: Icon(Icons.history_rounded), label: Text('Riwayat')),
-      ],
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Branding
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)]),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.local_laundry_service_rounded, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 10),
+                const Text('LaundryKu', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              ]),
+            ),
+            const Divider(height: 1, color: Color(0xFFEEF2FF)),
+            const SizedBox(height: 8),
+            // Nav items
+            ...[
+              (Icons.dashboard_rounded, 'Beranda', 0),
+              (Icons.add_circle_outline_rounded, 'Input', 1),
+              (Icons.qr_code_scanner_rounded, 'Scan', 2),
+              (Icons.history_rounded, 'Riwayat', 3),
+            ].map((item) {
+              final sel = _currentIndex == item.$3;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                child: InkWell(
+                  onTap: () => setState(() => _currentIndex = item.$3),
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: sel ? const Color(0xFFEEF2FF) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(children: [
+                      Icon(item.$1, size: 22, color: sel ? const Color(0xFF4F46E5) : Colors.grey.shade400),
+                      const SizedBox(width: 12),
+                      Text(item.$2, style: TextStyle(fontSize: 13, fontWeight: sel ? FontWeight.w800 : FontWeight.w500,
+                          color: sel ? const Color(0xFF4F46E5) : Colors.grey.shade500)),
+                    ]),
+                  ),
+                ),
+              );
+            }),
+            const Spacer(),
+            // Logout
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+              child: InkWell(
+                onTap: _logout,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.logout_rounded, size: 20, color: Color(0xFFEF4444)),
+                    const SizedBox(width: 12),
+                    const Text('Logout', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFEF4444))),
+                  ]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
