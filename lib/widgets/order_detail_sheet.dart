@@ -8,6 +8,7 @@ import '../services/printer_service.dart';
 import '../services/void_approval_service.dart';
 import '../services/audit_service.dart';
 import '../screens/printer_settings_dialog.dart';
+import '../widgets/catalog_sheet.dart';
 
 class OrderDetailSheet extends StatefulWidget {
   final OrderData order;
@@ -81,11 +82,11 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
     switch (order.status) {
       case 'Selesai':
         return '🧺 Halo *${order.customer}*!\n\nCucian Anda sudah *SELESAI* dan siap diambil. 🎉\n\n'
-          '🆔 Order: *${order.id}*\n📦 Layanan: ${order.service}\n⚖️ Berat: ${order.weight} kg\n💰 Total: *${order.formattedPrice}*\n\n'
-          'Silakan datang ke toko kami. Terima kasih sudah mempercayakan cucian Anda kepada kami! 🙏';
+          '🆔 Order: *${order.id}*\n📦 Layanan: ${order.detailedService}\n⚖️ Berat: ${order.weight} kg\n💰 Total: *${order.formattedPrice}*\n\n'
+          'Terima kasih telah mempercayakan cucian Anda kepada kami! 😊';
       case 'Proses':
         return '🧺 Halo *${order.customer}*!\n\nCucian Anda dengan ID *${order.id}* sedang dalam proses pengerjaan.\n\n'
-          '📦 Layanan: ${order.service}\n⚖️ Berat: ${order.weight} kg\n📅 Estimasi: ${order.estimatedDate}\n\nHarap ditunggu ya! Kami akan segera memberi kabar. 🙏';
+          '📦 Layanan: ${order.detailedService}\n⚖️ Berat: ${order.weight} kg\n📅 Estimasi: ${order.estimatedDate}\n\nHarap ditunggu ya! Kami akan segera memberi kabar. 🙏';
       case 'Sudah Diambil':
         return '🧺 Halo *${order.customer}*!\n\nTerima kasih sudah mempercayakan laundry Anda kepada kami. 😊\nSampai jumpa lagi!';
       default:
@@ -153,6 +154,51 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal void: $e')));
       }
     }
+  }
+
+  void _handleEditService() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => CatalogSheet(
+        prices: widget.appState.prices,
+        selectedItems: List.of(widget.order.items),
+        onDone: (updatedItems) async {
+          if (updatedItems.isEmpty) return; // Tidak boleh kosong
+          
+          final first = updatedItems.first;
+          final weight = first.unit == 'kg' ? first.qty : first.qty;
+          int totalPrice = 0;
+          for (var i in updatedItems) {
+            totalPrice += i.subtotal.toInt();
+          }
+          final serviceLabel = updatedItems.map((e) => '${e.service} (${e.displayQty})').join(', ');
+          
+          final updatedOrder = widget.order.copyWith(
+            items: updatedItems,
+            price: totalPrice,
+            weight: weight,
+            service: serviceLabel,
+          );
+          
+          widget.onUpdateOrder(updatedOrder);
+          
+          await AuditService().log(AuditLog(
+            id: '',
+            action: AuditActionType.edit_order,
+            orderId: widget.order.id,
+            staffId: widget.appState.currentUser?.id ?? '',
+            oldData: {'items': widget.order.items.map((e) => e.toJson()).toList(), 'price': widget.order.price},
+            newData: {'items': updatedItems.map((e) => e.toJson()).toList(), 'price': totalPrice},
+            reason: 'Admin mengubah layanan via detail sheet',
+          ));
+          
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Layanan berhasil diubah!')));
+        },
+      ),
+    );
   }
 
   void _confirmCancelPickup() {
@@ -265,11 +311,18 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
                               ]),
                             )),
                           ] else ...[
-                            Text(order.service, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
+                            Text(order.detailedService, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF1A1C1E))),
                             const SizedBox(height: 4),
                             Text('${order.weight} kg', style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
                           ],
-                        ])),
+                        ], action: widget.isAdmin ? GestureDetector(
+                          onTap: _handleEditService,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: const Color(0xFF1565C0).withAlpha(20), borderRadius: BorderRadius.circular(8)),
+                            child: const Text('Ubah', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1565C0))),
+                          ),
+                        ) : null)),
                       ]),
                       const SizedBox(height: 20),
 
@@ -497,7 +550,7 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
     );
   }
 
-  Widget _infoCard(IconData icon, String title, List<Widget> children) {
+  Widget _infoCard(IconData icon, String title, List<Widget> children, {Widget? action}) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -510,6 +563,8 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
           Icon(icon, size: 18, color: const Color(0xFF0D47A1).withAlpha(150)),
           const SizedBox(width: 8),
           Text(title.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF0D47A1).withAlpha(180), letterSpacing: 1)),
+          const Spacer(),
+          if (action != null) action,
         ]),
         const SizedBox(height: 16),
         ...children,

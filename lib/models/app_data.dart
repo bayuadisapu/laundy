@@ -270,6 +270,11 @@ class OrderData {
 
   String get formattedDate => DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(orderTime);
   String get formattedPrice => NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(price);
+
+  String get detailedService {
+    if (items.isEmpty) return service;
+    return items.map((e) => '${e.service} (${e.displayQty})').join(', ');
+  }
 }
 
 class StaffData {
@@ -459,7 +464,7 @@ class CashierShift {
   };
 }
 
-enum AuditActionType { void_order, price_change, delete_order, manual_status_change }
+enum AuditActionType { void_order, price_change, delete_order, manual_status_change, edit_order }
 
 class AuditLog {
   final String id;

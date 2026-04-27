@@ -338,7 +338,7 @@ class _ScanBarcodeViewState extends State<ScanBarcodeView> with SingleTickerProv
           Text('Pesanan Ditemukan', style: TextStyle(fontWeight: FontWeight.bold, color: canScan ? const Color(0xFF2E7D32) : Colors.grey.shade600)),
         ]),
         const SizedBox(height: 12),
-        _dRow('ID', o.id), _dRow('Pelanggan', o.customer), _dRow('Layanan', '${o.service} • ${o.weight} kg'),
+        _dRow('ID', o.id), _dRow('Pelanggan', o.customer), _dRow('Layanan', '${o.detailedService} • ${o.weight} kg'),
         _dRow('Total', _fmt(o.price)), _dRow('PIC', o.picName), _dRow('Status Saat Ini', o.status),
         const SizedBox(height: 16),
         if (canScan)

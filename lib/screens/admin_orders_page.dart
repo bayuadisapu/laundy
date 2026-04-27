@@ -64,11 +64,11 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
     switch (order.status) {
       case 'Selesai':
         return '🧺 Halo *${order.customer}*!\n\nCucian Anda sudah *SELESAI* dan siap diambil. 🎉\n\n'
-          '🆔 Order: *${order.id}*\n📦 Layanan: ${order.service}\n⚖️ Berat: ${order.weight} kg\n💰 Total: *${order.formattedPrice}*\n\n'
+          '🆔 Order: *${order.id}*\n📦 Layanan: ${order.detailedService}\n⚖️ Berat: ${order.weight} kg\n💰 Total: *${order.formattedPrice}*\n\n'
           'Silakan datang ke toko kami. Terima kasih sudah mempercayakan cucian Anda kepada kami! 🙏';
       case 'Proses':
         return '🧺 Halo *${order.customer}*!\n\nCucian Anda dengan ID *${order.id}* sedang dalam proses pengerjaan.\n\n'
-          '📦 Layanan: ${order.service}\n⚖️ Berat: ${order.weight} kg\n📅 Estimasi: ${order.estimatedDate}\n\nHarap ditunggu ya! Kami akan segera memberi kabar. 🙏';
+          '📦 Layanan: ${order.detailedService}\n⚖️ Berat: ${order.weight} kg\n📅 Estimasi: ${order.estimatedDate}\n\nHarap ditunggu ya! Kami akan segera memberi kabar. 🙏';
       case 'Sudah Diambil':
         return '🧺 Halo *${order.customer}*!\n\nTerima kasih sudah mempercayakan laundry Anda kepada kami. 😊\nSampai jumpa lagi!';
       default:
@@ -85,7 +85,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
         o.id.toLowerCase().contains(q) ||
         o.customer.toLowerCase().contains(q) ||
         o.picName.toLowerCase().contains(q) ||
-        o.service.toLowerCase().contains(q) ||
+        o.detailedService.toLowerCase().contains(q) ||
         o.phone.contains(q)
       ).toList();
     }
@@ -304,7 +304,7 @@ class _AdminOrdersPageState extends State<AdminOrdersPage> {
           ]),
           const SizedBox(height: 16),
           Row(children: [
-            Expanded(child: _chip(Icons.category_rounded, o.service)),
+            Expanded(child: _chip(Icons.category_rounded, o.detailedService)),
             Expanded(child: _chip(Icons.scale_rounded, '${o.weight} kg')),
             Expanded(child: _chip(Icons.badge_rounded, o.picName.isEmpty ? '-' : o.picName.split(' ').first)),
           ]),

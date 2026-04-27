@@ -174,7 +174,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: r)).value = xl.IntCellValue(i + 1);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: r)).value = xl.TextCellValue(t.id);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: r)).value = xl.TextCellValue(t.customer);
-        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: r)).value = xl.TextCellValue(t.service);
+        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: r)).value = xl.TextCellValue(t.detailedService);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: r)).value = xl.DoubleCellValue(t.weight);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: r)).value = xl.TextCellValue(_fmt(t.price.toDouble()));
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: r)).value = xl.TextCellValue(t.status);
@@ -228,7 +228,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
           headers: ['No', 'ID', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status'],
           data: transactions.asMap().entries.map((e) {
             final t = e.value;
-            return ['${e.key + 1}', t.id, t.customer, t.service, '${t.weight}kg', _fmt(t.price.toDouble()), t.status];
+            return ['${e.key + 1}', t.id, t.customer, t.detailedService, '${t.weight}kg', _fmt(t.price.toDouble()), t.status];
           }).toList(),
           headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
           cellStyle: const pw.TextStyle(fontSize: 8),
@@ -695,7 +695,7 @@ class _TransactionCard extends StatelessWidget {
         const SizedBox(height: 14),
         Row(children: [
           Expanded(child: _i('CUSTOMER', data.customer)),
-          Expanded(child: _i('LAYANAN', data.service)),
+          Expanded(child: _i('LAYANAN', data.detailedService)),
           Expanded(child: _i('HARGA', fmt(data.price.toDouble()))),
         ]),
       ]),

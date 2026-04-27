@@ -42,6 +42,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       case AuditActionType.delete_order: return const Color(0xFFB71C1C);
       case AuditActionType.manual_status_change: return const Color(0xFF1565C0);
       case AuditActionType.price_change: return const Color(0xFF2E7D32);
+      case AuditActionType.edit_order: return const Color(0xFFE65100);
     }
   }
 
@@ -51,6 +52,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       case AuditActionType.delete_order: return Icons.delete_forever_rounded;
       case AuditActionType.manual_status_change: return Icons.edit_rounded;
       case AuditActionType.price_change: return Icons.price_change_rounded;
+      case AuditActionType.edit_order: return Icons.edit_note_rounded;
     }
   }
 
@@ -60,6 +62,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       case AuditActionType.delete_order: return 'Hapus Order';
       case AuditActionType.manual_status_change: return 'Ubah Status';
       case AuditActionType.price_change: return 'Ubah Harga';
+      case AuditActionType.edit_order: return 'Ubah Layanan';
     }
   }
 

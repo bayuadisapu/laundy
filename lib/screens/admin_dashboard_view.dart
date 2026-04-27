@@ -115,7 +115,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     for (int i = 0; i < orders.length; i++) {
       final o = orders[i];
       sheet.appendRow([
-        IntCellValue(i + 1), TextCellValue(o.id), TextCellValue(o.customer), TextCellValue(o.service),
+        IntCellValue(i + 1), TextCellValue(o.id), TextCellValue(o.customer), TextCellValue(o.detailedService),
         DoubleCellValue(o.weight), IntCellValue(o.price), TextCellValue(o.status), TextCellValue(o.picName),
         TextCellValue(DateFormat('dd/MM/yyyy HH:mm').format(o.orderTime)),
         TextCellValue(o.estimatedDate), TextCellValue(o.notes),
@@ -689,7 +689,7 @@ class _OrderRow extends StatelessWidget {
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(order.customer, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A))),
         const SizedBox(height: 2),
-        Text('${order.id} · ${order.service}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        Text('${order.id} · ${order.detailedService}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
       ])),
       Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Container(

@@ -305,7 +305,7 @@ class _AdminCustomersPageState extends State<AdminCustomersPage> {
                         child: Text(o.status, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: sc))),
                     ]),
                     const SizedBox(height: 4),
-                    Text('${o.service} · ${o.weight} kg', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    Text('${o.detailedService} · ${o.weight} kg', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                     Text(DateFormat('dd MMM yyyy, HH:mm').format(o.orderTime), style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
                   ])),
                   const SizedBox(width: 8),

@@ -49,7 +49,7 @@ class _HistoryPageState extends State<HistoryPage> {
       list = list.where((o) =>
           o.id.toLowerCase().contains(q) ||
           o.customer.toLowerCase().contains(q) ||
-          o.service.toLowerCase().contains(q)).toList();
+          o.detailedService.toLowerCase().contains(q)).toList();
     }
 
     // Status
@@ -306,7 +306,7 @@ class _OrderCard extends StatelessWidget {
                     children: [
                       Text(order.customer, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Color(0xFF1A1C1E))),
                       const SizedBox(height: 2),
-                      Text('${order.id} • ${order.service}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                      Text('${order.id} • ${order.detailedService}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 6),
                       Text(order.formattedDate, style: TextStyle(fontSize: 10, color: Colors.grey.shade400, fontWeight: FontWeight.w600)),
                     ],
