@@ -349,6 +349,37 @@ class _OrderDetailSheetState extends State<OrderDetailSheet> {
                         const SizedBox(height: 12),
                         _infoRow('Estimasi', order.estimatedDate),
                         _infoRow('Dibuat', DateFormat('dd MMM yyyy, HH:mm').format(order.orderTime)),
+                        if (order.pickedUpTime != null) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.logout_rounded, size: 14, color: Color(0xFF2E7D32)),
+                                    const SizedBox(width: 6),
+                                    Text('Check Out', style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                                const SizedBox(width: 16),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2E7D32).withAlpha(20),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFF2E7D32).withAlpha(60)),
+                                  ),
+                                  child: Text(
+                                    DateFormat('dd MMM yyyy, HH:mm').format(order.pickedUpTime!),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF2E7D32)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (order.notes.isNotEmpty) ...[
                           const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider(height: 1)),
                           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -66,11 +66,13 @@ class _AdminReportPageState extends State<AdminReportPage> {
   List<OrderData> get _filteredTransactions {
     final now = DateTime.now();
     // Filter only picked up orders for financial report
+    // pickedUpTime bisa null untuk order lama, gunakan orderTime sebagai fallback
     return _state.orders.where((o) {
-      if (o.status != 'Sudah Diambil' || o.pickedUpTime == null) return false;
-      
+      if (o.status != 'Sudah Diambil') return false;
+
       if (_selectedRange == 'Semua') return true;
-      final date = o.pickedUpTime!;
+      // Gunakan pickedUpTime jika ada, fallback ke orderTime untuk order lama
+      final date = o.pickedUpTime ?? o.orderTime;
       switch (_selectedRange) {
         case 'Hari Ini':
           return date.year == now.year && date.month == now.month && date.day == now.day;
@@ -155,7 +157,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
 
       sheet.cell(xl.CellIndex.indexByString('A1')).value = xl.TextCellValue('LAPORAN KEUANGAN LAUNDRYKU');
       sheet.cell(xl.CellIndex.indexByString('A1')).cellStyle = xl.CellStyle(bold: true, fontSize: 16);
-      sheet.merge(xl.CellIndex.indexByString('A1'), xl.CellIndex.indexByString('H1'));
+      sheet.merge(xl.CellIndex.indexByString('A1'), xl.CellIndex.indexByString('J1'));
       sheet.cell(xl.CellIndex.indexByString('A2')).value = xl.TextCellValue('Periode: $_selectedRange | Dicetak: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}');
 
       sheet.cell(xl.CellIndex.indexByString('A4')).value = xl.TextCellValue('PEMASUKAN');
@@ -164,7 +166,7 @@ class _AdminReportPageState extends State<AdminReportPage> {
       sheet.cell(xl.CellIndex.indexByString('B5')).value = xl.TextCellValue(_fmt(_totalIncome));
       sheet.cell(xl.CellIndex.indexByString('A5')).cellStyle = xl.CellStyle(bold: true);
 
-      final headers = ['No', 'Barcode', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status', 'Status Bayar', 'PIC'];
+      final headers = ['No', 'Barcode', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status', 'Status Bayar', 'PIC', 'Waktu Check Out'];
       for (int i = 0; i < headers.length; i++) {
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 9)).value = xl.TextCellValue(headers[i]);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 9)).cellStyle = hStyle;
@@ -180,6 +182,9 @@ class _AdminReportPageState extends State<AdminReportPage> {
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: r)).value = xl.TextCellValue(t.status);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: r)).value = xl.TextCellValue(t.paymentStatus);
         sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: r)).value = xl.TextCellValue(t.picName);
+        sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: r)).value = xl.TextCellValue(
+          t.pickedUpTime != null ? DateFormat('dd/MM/yyyy HH:mm').format(t.pickedUpTime!) : '-',
+        );
       }
 
       final bytes = excel.save();
@@ -225,13 +230,17 @@ class _AdminReportPageState extends State<AdminReportPage> {
         pw.Text('RINCIAN TRANSAKSI (${transactions.length} data)', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 8),
         pw.TableHelper.fromTextArray(
-          headers: ['No', 'ID', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status'],
+          headers: ['No', 'ID', 'Customer', 'Layanan', 'Berat', 'Harga', 'Status', 'Check Out'],
           data: transactions.asMap().entries.map((e) {
             final t = e.value;
-            return ['${e.key + 1}', t.id, t.customer, t.detailedService, '${t.weight}kg', _fmt(t.price.toDouble()), t.status];
+            return [
+              '${e.key + 1}', t.id, t.customer, t.detailedService, '${t.weight}kg',
+              _fmt(t.price.toDouble()), t.status,
+              t.pickedUpTime != null ? DateFormat('dd/MM/yy HH:mm').format(t.pickedUpTime!) : '-',
+            ];
           }).toList(),
-          headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-          cellStyle: const pw.TextStyle(fontSize: 8),
+          headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+          cellStyle: const pw.TextStyle(fontSize: 7),
           cellAlignment: pw.Alignment.centerLeft,
         ),
       ],
@@ -698,6 +707,25 @@ class _TransactionCard extends StatelessWidget {
           Expanded(child: _i('LAYANAN', data.detailedService)),
           Expanded(child: _i('HARGA', fmt(data.price.toDouble()))),
         ]),
+        if (data.pickedUpTime != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F5E9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF2E7D32).withAlpha(60)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.logout_rounded, size: 13, color: Color(0xFF2E7D32)),
+              const SizedBox(width: 6),
+              Text(
+                'Check Out: ${DateFormat('dd MMM yyyy, HH:mm').format(data.pickedUpTime!)}',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32)),
+              ),
+            ]),
+          ),
+        ],
       ]),
     );
   }

@@ -174,11 +174,33 @@ class PrinterService {
 
       // ===== BARCODE =====
       bytes += generator.emptyLines(1);
-      bytes += generator.text('- SCAN ME -', styles: const PosStyles(align: PosAlign.center, bold: true));
-      // Code 128 requires a subset prefix. '{B' is for Subset B (Alphanumeric)
-      final List<int> barData = [123, 66, ...order.id.codeUnits]; 
-      bytes += generator.barcode(Barcode.code128(barData), height: 60);
-      bytes += generator.text(order.id, styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.text('Scan Barcode:', styles: const PosStyles(align: PosAlign.center, bold: true));
+      try {
+        // Code128 lebih compact dari Code39, cocok untuk ID panjang di kertas 58mm
+        // Langsung pass codeUnits tanpa prefix manual - library menangani encoding
+        bytes += generator.barcode(
+          Barcode.code128(order.id.codeUnits),
+          height: 48,
+          size: BarcodeSize.dot2,
+          textPos: BarcodeText.below,
+        );
+      } catch (_) {
+        try {
+          // Fallback ke Code39 jika Code128 gagal
+          bytes += generator.barcode(
+            Barcode.code39(order.id.codeUnits),
+            height: 48,
+            size: BarcodeSize.dot2,
+            textPos: BarcodeText.below,
+          );
+        } catch (_) {
+          // Fallback terakhir: cetak ID sebagai teks tebal
+          bytes += generator.text(
+            order.id,
+            styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2),
+          );
+        }
+      }
       bytes += generator.emptyLines(3);
       bytes += generator.cut();
 
